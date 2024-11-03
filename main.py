@@ -68,8 +68,6 @@ if __name__ == "__main__":
     # ['SF Arroyo-Tampemole', 'SF Pozo Pachon Praxe', 'CF Pachon', 'CF Refugio', 'CF Sabinos', 'CF Tinaja','CF Piedras', 'CF Toro', 'CF Subterraneo ']
     main(name_project, name_selection, aggregation_type, freq_plot_pop_order_list)
 
-    # Save to private GitHub
-    # Issue with error generation code
 
     # Stats (cf. first slide pptx)
     # MDS
