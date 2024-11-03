@@ -13,7 +13,7 @@ def main_error_recaptures(
     logger.info("Configuration and data retrieved.")
 
     # Test impact of errors of genotyping in recapture rates
-    # save_proba_same_ind(config)
+    save_proba_same_ind(config)
     test_error_impact_scenarios_on_given_pop(config, pop_name, nb_inds_simu, nb_iterations_simu)
 
     logger.info("The End.")

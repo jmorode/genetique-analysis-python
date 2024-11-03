@@ -66,10 +66,10 @@ def get_recaptures_sample(config: FileConfiguration, df_pairwise: pd.DataFrame, 
             columns=["ind1", "ind2"],
         )
 
-        df["ind1_pop"] = df.ind1.apply(lambda x: config.dict_pop_samples[x])
-        df["ind2_pop"] = df.ind2.apply(lambda x: config.dict_pop_samples[x])
-
         if save_file :
+            df["ind1_pop"] = df.ind1.apply(lambda x: config.dict_pop_samples[x])
+            df["ind2_pop"] = df.ind2.apply(lambda x: config.dict_pop_samples[x])
+
             df.to_csv(
                 f"{config.output_path}/recaptures/recaptures_{name}.csv",
                 sep=";",
