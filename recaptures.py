@@ -49,7 +49,6 @@ def get_recaptures(config: FileConfiguration) -> None:
 def get_recaptures_sample(config: FileConfiguration, df_pairwise: pd.DataFrame, name: str, save_file: False) -> pd.DataFrame:
 
     cols = list(df_pairwise.columns)
-    print(cols)
     res = pd.DataFrame()
     for _col in cols:
         recap = df_pairwise.index[df_pairwise[_col] == 0].tolist()
