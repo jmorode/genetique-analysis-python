@@ -157,6 +157,7 @@ def calculate_pairwise_differences(
     np.fill_diagonal(diff_matrix.values, np.nan)
 
     # Save pairwise matrix
+    diff_matrix["Population"] = diff_matrix.index.map(config.dict_pop_samples)
     diff_matrix.to_csv(
         f"{config.output_path}/pairwise_differences/pairwise_differences_{pop}.csv",
         sep=";",
@@ -171,7 +172,7 @@ def calculate_pairwise_differences(
         sep=";",
         index=False,
     )
-    return diff_matrix
+    return diff_matrix.drop(columns=["Population"])
 
 
 def get_combination_duets(list_pops: list[str]) -> list:
