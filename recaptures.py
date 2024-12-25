@@ -8,7 +8,7 @@ def get_recaptures(config: FileConfiguration) -> None:
 
     if config.agg_type == "all":
         df_pairwise = pd.read_csv(
-        f"{config.output_path}/pairwise_differences/pairwise_differences_{config.selection_name}.csv",
+        f"{config.output_path}/pairwise_differences/pairwise_differences_{config.selection_name}_all.csv",
         sep=";",
         )
         df_pairwise = df_pairwise.set_index("Sample")

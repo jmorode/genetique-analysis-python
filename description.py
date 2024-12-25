@@ -303,7 +303,7 @@ def plot_frequencies(
     df_pops = pd.DataFrame()
     if agg_type == "all":
         df_pops = pd.read_csv(
-            f"{config.output_path}/raw_data/frequencies_{selection_name}.csv", sep=";"
+            f"{config.output_path}/raw_data/frequencies_{selection_name}_all.csv", sep=";"
         )
         df_pops["population"] = "all"
         df_pops["legend"] = selection_name
