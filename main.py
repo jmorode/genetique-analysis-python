@@ -55,23 +55,19 @@ def main(
 
 
 if __name__ == "__main__":
-    name_project = "test" #"analysis_nov_2024_more_loci"
-    name_selection = "pachon_sabinos"
+    name_project = "test_sept_2025" #"analysis_nov_2024_more_loci"
+    name_selection = "everything"
     # if aggregation_type == all: all config together
     # if aggregation_type == pops: all config together for each population (merge the years)
     # if aggregation_type == pop_years: each population / year
     # if aggregation_type == subcat: account for subcategories
-    aggregation_type = "pops"  # "all", "pops", "pop_years", "subcat"
+    aggregation_type = "all"  # "all", "pops", "pop_years", "subcat"
     freq_plot_pop_order_list = (
         []
     )
     # ['SF Arroyo-Tampemole', 'SF Pozo Pachon Praxe', 'CF Pachon', 'CF Refugio', 'CF Sabinos', 'CF Tinaja','CF Piedras', 'CF Toro', 'CF Subterraneo ']
     main(name_project, name_selection, aggregation_type, freq_plot_pop_order_list)
 
-
-    # Stats (cf. first slide pptx)
-    # MDS
-    # test de Fisher
 
     # add an option so that we can directly select all the genotype database (option in config file ?)
     # add analysis options with config file for analysis - group by relevant action

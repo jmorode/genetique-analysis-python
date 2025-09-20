@@ -60,7 +60,7 @@ def generate_related_individuals_following_frequencies(
         selection_name: str
 ) -> pd.DataFrame:
     frequencies = pd.read_csv(
-        f"{config.output_path}/raw_data/frequencies_{selection_name}.csv",
+        f"{config.output_path}/raw_data/frequencies_{config.project_name}_{selection_name}.csv",
         sep=";",
     )
     # Generate parents : P1 (ind1), M (ind2), P2 (ind3)

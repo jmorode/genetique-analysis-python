@@ -143,6 +143,8 @@ class FileConfiguration:
 
     def retrieve_and_prepare_inputs(self, selection_name: str):
         # get genotypes full file
+        print(self.input_path)
+        print(os.getcwd())
         if os.path.exists(f"{self.input_path}/genotypes.csv"):
             self.genotypes_two_lines = pd.read_csv(
                 f"{self.input_path}/genotypes.csv", sep=";"

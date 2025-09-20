@@ -150,7 +150,7 @@ def calculate_frequencies(
 
     # Save
     df.to_csv(
-        f"{config.output_path}/raw_data/frequencies_{selection_name}.csv",
+        f"{config.output_path}/raw_data/frequencies_{config.project_name}_{selection_name}.csv",
         index=False,
         sep=";",
     )
