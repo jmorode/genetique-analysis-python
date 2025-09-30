@@ -104,7 +104,7 @@ genetique-error-tests
 genetique-error-tests project_name selection_name population_name nb_individuals nb_iterations
 
 # Example with specific parameters
-genetique-error-tests analysis_nov_2024_more_loci pachon_sabinos Pachon 100 1000
+genetique-error-tests analysis_nov_2024_more_loci pachon_sabinos CF_Pachon 100 1000
 ```
 
 ### Alternative Python Module Usage
@@ -309,7 +309,7 @@ genetique_analysis/
 
 ## Requirements
 
-- Python 3.12+
+- Python 3.9+
 - NumPy
 - Pandas
 - Matplotlib

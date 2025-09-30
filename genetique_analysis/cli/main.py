@@ -8,7 +8,6 @@ from the terminal.
 import json
 import os
 import sys
-import warnings
 
 from loguru import logger
 
@@ -39,9 +38,6 @@ from ..analysis.test_stats import (
 
 # Local imports
 from ..core.config import FileConfiguration
-
-# Suppress warnings for cleaner output
-warnings.filterwarnings("ignore")
 
 
 def load_configuration(project_name: str) -> FileConfiguration:

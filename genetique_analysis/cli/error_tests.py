@@ -48,9 +48,9 @@ def cli_error_tests():
     import sys
 
     # Default parameters
-    name_project = "analysis_nov_2024_more_loci"
+    name_project = "analysis_nov_2024"
     name_selection = "pachon_sabinos"
-    pop_name = "Pachon"
+    pop_name = "CF_Pachon"
     nb_inds_simu = 100
     nb_iterations_simu = 1000
 
