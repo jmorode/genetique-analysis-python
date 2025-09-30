@@ -4,11 +4,15 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from config import FileConfiguration
-from constants import rename_parents
 from matplotlib.backends.backend_pdf import PdfPages
-from pairwise_differences import calculate_pairwise_differences
-from utils import conversion_two_lines_to_one_lines_genotypes, get_extension_if_subcat
+
+from ..core.config import FileConfiguration
+from ..core.constants import rename_parents
+from ..utils.utils import (
+    conversion_two_lines_to_one_lines_genotypes,
+    get_extension_if_subcat,
+)
+from .pairwise_differences import calculate_pairwise_differences
 
 
 def generate_unrelated_individuals_following_frequencies(

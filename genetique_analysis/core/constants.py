@@ -7,21 +7,9 @@ including ML-related constants, family relationship mappings, and other fixed va
 
 from typing import Any, Dict
 
-import numpy as np
-
 # ML Relate Constants
 # Reference array for ML-related relationship comparisons
-REFERENCE_ARRAY = np.array(
-    [
-        ["-", np.nan, np.nan, np.nan, np.nan, np.nan],
-        ["U", "-", np.nan, np.nan, np.nan, np.nan],
-        ["U", "U", "-", np.nan, np.nan, np.nan],
-        ["PO", "PO", "U", "-", np.nan, np.nan],
-        ["PO", "PO", "U", "FS", "-", np.nan],
-        ["U", "PO", "PO", "HS", "HS", "-"],
-    ],
-    dtype=object,
-)
+# Note: REFERENCE_ARRAY is defined below after numpy import
 
 # Family member ordering for ML-related analysis
 ORDER_INDS_FAMILY: Dict[str, int] = {
@@ -78,7 +66,36 @@ KS_TEST_ALPHA = 0.05
 Q95_THRESHOLD = 0.95
 
 # Backward compatibility - keeping original names for existing code
-reference_array = REFERENCE_ARRAY
-order_inds_family = ORDER_INDS_FAMILY
-nb_ind_relation = NB_IND_RELATION
-rename_parents = RENAME_PARENTS
+# Note: These will be defined below after numpy import
+
+# Numpy-dependent constants (defined with try-except for optional dependency)
+try:
+    import numpy as np
+
+    # ML Relate Constants
+    # Reference array for ML-related relationship comparisons
+    REFERENCE_ARRAY = np.array(
+        [
+            ["-", np.nan, np.nan, np.nan, np.nan, np.nan],
+            ["U", "-", np.nan, np.nan, np.nan, np.nan],
+            ["U", "U", "-", np.nan, np.nan, np.nan],
+            ["PO", "PO", "U", "-", np.nan, np.nan],
+            ["PO", "PO", "U", "FS", "-", np.nan],
+            ["U", "PO", "PO", "HS", "HS", "-"],
+        ],
+        dtype=object,
+    )
+
+    # Backward compatibility - keeping original names for existing code
+    reference_array = REFERENCE_ARRAY
+    order_inds_family = ORDER_INDS_FAMILY
+    nb_ind_relation = NB_IND_RELATION
+    rename_parents = RENAME_PARENTS
+
+except ImportError:
+    # If numpy is not available, define placeholder values
+    REFERENCE_ARRAY = None
+    reference_array = None
+    order_inds_family = ORDER_INDS_FAMILY
+    nb_ind_relation = NB_IND_RELATION
+    rename_parents = RENAME_PARENTS

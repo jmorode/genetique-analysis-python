@@ -4,8 +4,9 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from config import FileConfiguration
-from utils import (
+
+from ..core.config import FileConfiguration
+from ..utils.utils import (
     get_extension_if_subcat,
     select_a_given_pop,
     select_a_given_pop_year,

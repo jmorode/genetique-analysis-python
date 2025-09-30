@@ -1,12 +1,8 @@
 """
-Main entry point for genetics analysis pipeline.
+Main CLI module for genetique analysis.
 
-This module orchestrates the complete genetics analysis workflow including:
-- Frequency and heterozygosity calculations
-- Pairwise difference analysis
-- Recapture analysis
-- ML-related analysis
-- Statistical testing
+This module provides the command-line interface for running genetics analysis
+from the terminal.
 """
 
 import json
@@ -14,28 +10,35 @@ import os
 import sys
 import warnings
 
-# Local imports
-from config import FileConfiguration
-from description import compute_frequency_and_heterozygosity, save_proba_same_ind
-from generation import (
+from loguru import logger
+
+from ..analysis.description import (
+    compute_frequency_and_heterozygosity,
+    save_proba_same_ind,
+)
+from ..analysis.generation import (
     plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop,
     plot_pairwise_distances_per_relationships,
 )
-from loguru import logger
-from ml_relate import (
+from ..analysis.ml_relate import (
     count_nbr_relationships_from_ml_relate_output,
     reliability_ml_relate_based_simulated_families,
     write_ml_relate_input_file_genotypes,
     write_ml_relate_input_file_simu_families,
 )
-from pairwise_differences import (
+from ..analysis.pairwise_differences import (
     plot_pairwise_distances_all_intra_populations,
     plot_pairwise_distances_one_by_one,
     plot_pairwise_distances_two_by_two,
     recover_pairwise_difference,
 )
-from recaptures import get_recaptures
-from test_stats import compute_ks_test_between_pairwise_distance_and_relationships_simu
+from ..analysis.recaptures import get_recaptures
+from ..analysis.test_stats import (
+    compute_ks_test_between_pairwise_distance_and_relationships_simu,
+)
+
+# Local imports
+from ..core.config import FileConfiguration
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings("ignore")
@@ -184,7 +187,8 @@ def main(project_name: str) -> None:
     logger.info("Genetics analysis pipeline completed successfully")
 
 
-if __name__ == "__main__":
+def cli_main():
+    """Command-line interface entry point."""
     # Get project name from command line argument or use default
     if len(sys.argv) > 1:
         project_name = sys.argv[1]
@@ -215,3 +219,7 @@ if __name__ == "__main__":
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    cli_main()

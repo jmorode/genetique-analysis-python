@@ -1,198 +1,324 @@
-# Genetics Package
+# Genetique Analysis
 
-This folder provides tools for analyzing genetic data, computing population genetics statistics, and performing various genetic analyses including pairwise comparisons, ML-Relate analysis, and simulation studies.
+An analysis package for microsatellites genetic data processing, providing tools for frequency calculations, pairwise analysis, ML-related analysis, and statistical testing.
 
 ## Features
 
-- **Population genetics analysis**: Compute allele frequencies, heterozygosity, and population genetic statistics
-- **Pairwise distance calculations**: Analyze genetic distances between individuals and populations
-- **ML-Relate integration**: Generate input files and analyze ML-Relate output for relationship inference
-- **Family simulation**: Generate simulated families for validation and testing
-- **Error analysis**: Test the impact of genotyping errors on population genetic analyses
-- **Recapture analysis**: Identify potential recaptured individuals based on genetic similarity
-- **Statistical testing**: Perform Kolmogorov-Smirnov tests and other statistical analyses
-- **Visualization**: Generate plots and visualizations of genetic data and analysis results
+- **Analysis pipeline for**:
+  - Frequency and heterozygosity calculations
+  - Pairwise difference analysis and plotting
+  - Recapture analysis
+  - ML-related analysis and reliability testing
+  - Statistical testing and relationship analysis
 
+## Installation
 
-## Project Structure
+### Using uv (recommended)
 
-The package is organized into several modules:
-
-```
-src/genetics/
-├── core/           # Core functionality and configuration
-├── io/             # Input/output utilities
-├── analysis/       # Analysis modules
-└── visualization/  # Plotting utilities (future)
+```bash
+# Install from local source
+uv pip install -e .
 ```
 
-### Core Modules
+### Using pip
 
-- **`config.py`**: Configuration management and data loading
-- **`constants.py`**: Constants and reference data used throughout the package
-
-### Analysis Modules
-
-- **`description.py`**: Population genetics descriptive statistics
-- **`pairwise_differences.py`**: Pairwise genetic distance calculations
-- **`generation.py`**: Family simulation and generation tools
-- **`ml_relate.py`**: ML-Relate integration and analysis
-- **`recaptures.py`**: Recapture identification
-- **`test_stats.py`**: Statistical testing functions
-- **`error_generation.py`**: Error simulation and impact analysis
-
-## Required Input Files
-
-The genetics package requires specific input files organized in a project directory structure:
-
-```
-projects/
-└── {project_name}/
-    └── inputs/
-        ├── genotypes.csv        # Main genotype data (required)
-        ├── selection_{name}.csv # Population/year selection (required)
-        ├── conversion.csv       # Allele conversion table (optional)
-        └── config.json         # Analysis configuration (optional)
+```bash
+# Install from local source
+pip install -e .
 ```
 
-### Input File Formats
+### Using the provided install script
 
-#### 1. genotypes.csv (Required)
-Contains the genetic data with the following columns:
-- `Sample`: Individual identifier
-- `Population`: Population name
-- `Year`: Sampling year
-- `Subcategory`: Additional categorization (optional)
-- Locus columns: One column per genetic locus
-
-Example:
-```csv
-Sample;Population;Year;Subcategory;Locus1;Locus2;Locus3
-IND001;Pop_A;2020;Adult;120;135;200
-IND001;Pop_A;2020;Adult;124;139;204
-IND002;Pop_B;2021;Juvenile;118;135;196
-IND002;Pop_B;2021;Juvenile;122;131;200
+```bash
+# The script automatically detects and uses uv or pip
+./install.sh
 ```
 
-*Note: Genotypes are stored in two-line format (one line per allele)*
+## Quick Start
 
-#### 2. selection_{name}.csv (Required)
-Specifies which populations and years to include in the analysis:
-```csv
-Population;Year;Subcategory
-Pop_A;2020;Adult
-Pop_B;2021;Juvenile
-Pop_C;2020;
-```
+1. **Create a project directory structure**:
+   ```
+   projects/
+   └── your_project/
+       ├── inputs/
+       │   ├── config.json
+       │   ├── genotypes.csv
+       │   ├── selection_{selection_name}.csv
+       │   └── conversion.csv (optional)
+       └── outputs/
+   ```
 
-#### 3. conversion.csv (Optional)
-Maps raw allele codes to standardized numeric values:
-```csv
-Loci;allele_raw;allele_corrected
-Locus1;A;100
-Locus1;B;104
-Locus2;X;200
-Locus2;Y;210
-```
+2. **Create a configuration file** (`projects/your_project/inputs/config.json`):
+   ```json
+   {
+     "project_name": "your_project",
+     "selection_name": "everything",
+     "aggregation_type": "pops",
+     "population_order": [],
+     "analysis_steps": {
+       "step_1_frequency_heterozygosity": true,
+       "step_2_pairwise_differences": true,
+       "step_3_plot_pairwise_distances": true,
+       "step_4_recaptures": true,
+       "step_5_ml_relate_input": false,
+       "step_6_ml_relate_output": false,
+       "step_7_relationship_analysis": false
+     },
+     "simulation_parameters": {
+       "nb_families": 1000,
+       "nb_individuals": 100
+     }
+   }
+   ```
 
-#### 4. config.json (Optional)
-Contains analysis-specific configurations:
-```json
-{
-  "analysis_param1": true,
-  "analysis_param2": 0.05,
-  "output_options": ["plots", "tables"]
-}
-```
-
-An example of a config.json file is provided in `config.example.json`.
-
-## Aggregation Types
-
-The package supports different aggregation strategies:
-
-- **`"all"`**: Combine all populations and years together
-- **`"pops"`**: Group by population (merge years within populations)
-- **`"pop_years"`**: Separate analysis for each population-year combination
-- **`"subcat"`**: Include subcategory information in grouping
+3. **Run the analysis**:
+   ```bash
+   # Using the command-line interface
+   genetique-analysis your_project
+   
+   
+   # Or using Python directly
+   python -m genetique_analysis.cli.main your_project
+   ```
 
 ## Command Line Usage
-
-The package provides two command-line entry points:
 
 ### Main Analysis Pipeline
 
 ```bash
-genetics-main
+# Run analysis for a specific project
+genetique-analysis my_project_name
+
+# Run analysis for the default project
+genetique-analysis
+
 ```
 
-### Error Testing Pipeline
+### Error Impact Testing
+
 ```bash
-genetics-error-tests
+# Run error impact tests with default parameters
+genetique-error-tests
+
+# Run with custom parameters
+genetique-error-tests project_name selection_name population_name nb_individuals nb_iterations
+
+# Example with specific parameters
+genetique-error-tests analysis_nov_2024_more_loci pachon_sabinos Pachon 100 1000
 ```
 
-## Analysis Workflow
+### Alternative Python Module Usage
 
-The typical analysis workflow includes:
+```bash
+# Run main analysis
+python -m genetique_analysis.cli.main your_project_name
 
-1. **Data Loading and Preprocessing**
-   - Load genotype data
-   - Apply allele conversions (if specified)
-   - Convert two-line genotypes to single-line format
-
-2. **Descriptive Analysis**
-   - Calculate allele frequencies
-   - Compute heterozygosity statistics
-   - Generate population genetic summaries
-
-3. **Pairwise Analysis**
-   - Calculate genetic distances between all individual pairs
-   - Generate pairwise distance matrices
-   - Create distance plots and visualizations
-
-4. **Recapture Analysis**
-   - Identify potential recaptured individuals
-   - Generate recapture probability matrices
-
-5. **ML-Relate Analysis**
-   - Generate ML-Relate input files
-   - Process ML-Relate output
-   - Validate relationship predictions with simulated families
-
-6. **Statistical Testing**
-   - Perform hypothesis tests on genetic distances
-   - Compare observed vs. simulated data
-   - Generate statistical reports
-
-
-    
-## Output Structure
-
-Analysis results are saved in the project output directory:
-
-```
-projects/
-└── {project_name}/
-    └── outputs/
-        ├── raw_data/                # Processed input data
-        ├── heterozygosity/          # Population genetic statistics
-        ├── pairwise_differences/    # Distance matrices and plots
-        ├── recaptures/             # Recapture analysis results
-        ├── ml_relate/              # ML-Relate files and results
-        ├── test_stats/             # Statistical test results
-        └── error_recapture_tests/  # Error analysis results
+# Run error tests
+python -m genetique_analysis.cli.error_tests project_name selection_name pop_name nb_inds nb_iterations
 ```
 
-## Dependencies
+## Configuration System
 
-- **pandas**: Data manipulation and analysis
-- **numpy**: Numerical computing
-- **matplotlib**: Plotting and visualization
-- **scipy**: Scientific computing and statistics
-- **joblib**: Parallel computing
-- **tqdm**: Progress bars
+The main functions of the package are configuration-driven. All analysis parameters and steps are controlled through a JSON configuration file.
+
+### Configuration File Location
+
+Place your configuration file at: `projects/{project_name}/inputs/config.json`
+
+### Configuration File Structure
+
+```json
+{
+  "project_name": "your_project_name",
+  "selection_name": "your_selection_name",
+  "aggregation_type": "pops",
+  "population_order": ["Pop1", "Pop2", "Pop3"],
+  "analysis_steps": {
+    "step_1_frequency_heterozygosity": true,
+    "step_2_pairwise_differences": true,
+    "step_3_plot_pairwise_distances": true,
+    "step_4_recaptures": true,
+    "step_5_ml_relate_input": true,
+    "step_6_ml_relate_output": true,
+    "step_7_relationship_analysis": true
+  },
+  "simulation_parameters": {
+    "nb_families": 1000,
+    "nb_individuals": 100
+  },
+  "plotting_parameters": {
+    "figure_size": [8, 6],
+    "large_figure_size": [30, 10],
+    "dpi": 300
+  },
+  "file_parameters": {
+    "csv_separator": ";",
+    "file_encoding": "utf-8"
+  }
+}
+```
+
+### Configuration Parameters
+
+#### Basic Parameters
+- **project_name**: Name of your project directory
+- **selection_name**: Name of the selection file (without .csv extension)
+- **aggregation_type**: Analysis aggregation type
+  - `"all"`: All populations together
+  - `"pops"`: Each population separately (merge years)
+  - `"pop_years"`: Each population/year combination separately
+  - `"subcat"`: Account for subcategories
+- **population_order**: List of population names in desired order for plotting (empty list uses default order)
+
+#### Analysis Steps Control
+You can enable/disable individual analysis steps:
+
+- **step_1_frequency_heterozygosity**: Frequency and heterozygosity calculations
+- **step_2_pairwise_differences**: Pairwise difference calculations
+- **step_3_plot_pairwise_distances**: Pairwise distance plotting
+- **step_4_recaptures**: Recapture analysis
+- **step_5_ml_relate_input**: ML-related input file generation
+- **step_6_ml_relate_output**: ML-related output analysis
+- **step_7_relationship_analysis**: Relationship analysis and statistical testing
+
+#### Simulation Parameters
+- **nb_families**: Number of families for simulation (default: 1000)
+- **nb_individuals**: Number of individuals for simulation (default: 100)
+
+#### Plotting Parameters
+- **figure_size**: Default figure size [width, height] (default: [8, 6])
+- **large_figure_size**: Large figure size [width, height] (default: [30, 10])
+- **dpi**: Figure resolution (default: 300)
+
+#### File Parameters
+- **csv_separator**: CSV file separator (default: ";")
+- **file_encoding**: File encoding (default: "utf-8")
+
+### Example Configurations
+
+#### 1. Full Analysis (All Steps Enabled)
+```json
+{
+  "project_name": "my_project",
+  "selection_name": "everything",
+  "aggregation_type": "pops",
+  "population_order": [],
+  "analysis_steps": {
+    "step_1_frequency_heterozygosity": true,
+    "step_2_pairwise_differences": true,
+    "step_3_plot_pairwise_distances": true,
+    "step_4_recaptures": true,
+    "step_5_ml_relate_input": true,
+    "step_6_ml_relate_output": true,
+    "step_7_relationship_analysis": true
+  }
+}
+```
+
+#### 2. Skip ML-Related Analysis (Steps 5, 6, 7 Disabled)
+```json
+{
+  "project_name": "my_project",
+  "selection_name": "everything",
+  "aggregation_type": "pops",
+  "population_order": [],
+  "analysis_steps": {
+    "step_1_frequency_heterozygosity": true,
+    "step_2_pairwise_differences": true,
+    "step_3_plot_pairwise_distances": true,
+    "step_4_recaptures": true,
+    "step_5_ml_relate_input": false,
+    "step_6_ml_relate_output": false,
+    "step_7_relationship_analysis": false
+  }
+}
+```
+
+### Configuration Requirements
+
+- **Configuration file is required**: The system requires a `config.json` file to run
+- **Missing parameters**: If a configuration file exists but is missing some parameters, default values are used
+- **Error handling**: Clear error messages are provided if the configuration file is missing or invalid
+
+## Python API
+
+You can also use the package programmatically:
+
+### Main Analysis Pipeline
+
+```python
+from genetique_analysis import FileConfiguration
+from genetique_analysis.analysis import (
+    compute_frequency_and_heterozygosity,
+    save_proba_same_ind,
+    recover_pairwise_difference,
+    get_recaptures
+)
+
+# Load configuration
+config = FileConfiguration("my_project", "pops", "everything")
+config.initialize_global()
+
+# Run specific analysis steps
+save_proba_same_ind(config)
+compute_frequency_and_heterozygosity(config, [])
+recover_pairwise_difference(config)
+get_recaptures(config)
+```
+
+### Error Impact Testing
+
+```python
+from genetique_analysis.cli import main_error_recaptures
+
+# Run error impact testing
+main_error_recaptures(
+    project_name="my_project",
+    selection_name="everything", 
+    pop_name="Population1",
+    nb_inds_simu=100,
+    nb_iterations_simu=1000
+)
+```
+
+## Project Structure
+
+```
+genetique_analysis/
+├── __init__.py              # Main package with lazy imports
+├── core/                    # Core functionality
+│   ├── __init__.py         # Core module with lazy imports
+│   ├── config.py           # Configuration management
+│   └── constants.py        # Constants and defaults
+├── utils/                   # Utility functions
+│   ├── __init__.py         # Utils module exports
+│   └── utils.py            # Helper functions
+├── analysis/                # Analysis modules
+│   ├── __init__.py         # Analysis module with lazy imports
+│   ├── description.py      # Frequency and heterozygosity
+│   ├── pairwise_differences.py  # Pairwise analysis
+│   ├── ml_relate.py        # ML-related analysis
+│   ├── recaptures.py       # Recapture analysis
+│   ├── generation.py       # Simulation and generation
+│   ├── error_generation.py # Error simulation
+│   └── test_stats.py       # Statistical testing
+└── cli/                     # Command-line interface
+    ├── __init__.py         # CLI module exports
+    └── main.py             # CLI entry point
+```
+
+## Requirements
+
+- Python 3.12+
+- NumPy
+- Pandas
+- Matplotlib
+- SciPy
+- Loguru
+- Joblib
+- tqdm
 
 
 ## License
 
-This project is licensed under the CeCILL free software license agreement - see the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.

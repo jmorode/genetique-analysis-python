@@ -1,6 +1,7 @@
 import pandas as pd
-from config import FileConfiguration
 from loguru import logger
+
+from ..core.config import FileConfiguration
 
 
 def get_recaptures(config: FileConfiguration) -> None:

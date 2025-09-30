@@ -3,10 +3,14 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
-from config import FileConfiguration
-from constants import nb_ind_relation, order_inds_family, reference_array
-from generation import generate_n_families_following_frequencies_for_ml_relate
-from utils import conversion_two_lines_to_one_lines_genotypes, get_extension_if_subcat
+
+from ..core.config import FileConfiguration
+from ..core.constants import nb_ind_relation, order_inds_family, reference_array
+from ..utils.utils import (
+    conversion_two_lines_to_one_lines_genotypes,
+    get_extension_if_subcat,
+)
+from .generation import generate_n_families_following_frequencies_for_ml_relate
 
 
 def write_ml_relate_input_file(

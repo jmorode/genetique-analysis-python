@@ -5,14 +5,18 @@ from typing import Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from config import FileConfiguration
-from description import calculate_frequencies
-from generation import generate_unrelated_individuals_following_frequencies
 from joblib import Parallel, delayed
-from pairwise_differences import calculate_pairwise_differences
-from recaptures import get_recaptures_sample
 from tqdm import tqdm
-from utils import conversion_two_lines_to_one_lines_genotypes, select_a_given_pop
+
+from ..core.config import FileConfiguration
+from ..utils.utils import (
+    conversion_two_lines_to_one_lines_genotypes,
+    select_a_given_pop,
+)
+from .description import calculate_frequencies
+from .generation import generate_unrelated_individuals_following_frequencies
+from .pairwise_differences import calculate_pairwise_differences
+from .recaptures import get_recaptures_sample
 
 
 def get_another_allele_in_pop(

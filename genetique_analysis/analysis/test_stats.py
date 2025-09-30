@@ -1,9 +1,10 @@
 import numpy as np
 import pandas as pd
-from config import FileConfiguration
-from generation import generate_n_families_following_frequencies_for_pairwise_distances
 from scipy.stats import ks_2samp
-from utils import get_extension_if_subcat
+
+from ..core.config import FileConfiguration
+from ..utils.utils import get_extension_if_subcat
+from .generation import generate_n_families_following_frequencies_for_pairwise_distances
 
 
 def compute_ks_test_between_pairwise_distance_and_relationships_simu_per_selection(

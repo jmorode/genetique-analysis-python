@@ -11,7 +11,13 @@ import sys
 from typing import Any, Dict, List, Optional
 
 import pandas as pd
-from constants import (
+from loguru import logger
+
+from ..utils.utils import (
+    conversion_two_lines_to_one_lines_genotypes,
+    create_folder_if_necessary,
+)
+from .constants import (
     AGGREGATION_TYPES,
     ANALYSIS_STEPS,
     CSV_SEPARATOR,
@@ -21,11 +27,6 @@ from constants import (
     FILE_ENCODING,
     LARGE_FIGURE_SIZE,
     PLOT_DPI,
-)
-from loguru import logger
-from utils import (
-    conversion_two_lines_to_one_lines_genotypes,
-    create_folder_if_necessary,
 )
 
 
