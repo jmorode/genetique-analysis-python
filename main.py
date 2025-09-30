@@ -12,6 +12,8 @@ from recaptures import get_recaptures
 from generation import plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop, plot_pairwise_distances_per_relationships
 from test_stats import compute_ks_test_between_pairwise_distance_and_relationships_simu
 
+import warnings
+warnings.filterwarnings("ignore")
 
 def main(
     project_name: str, selection_name: str, agg_type: str, pop_order_list: list[str]
@@ -21,11 +23,11 @@ def main(
     config.initialize_global()
     logger.info("Configuration and data retrieved.")
 
-    # Description
+    # --- Description
     save_proba_same_ind(config)
     compute_frequency_and_heterozygosity(config, pop_order_list)
 
-    # Pairwise
+    # --- Pairwise
     recover_pairwise_difference(config)
 
     plot_pairwise_distances_one_by_one(config)
@@ -34,10 +36,10 @@ def main(
     if config.agg_type == "pops":
         plot_pairwise_distances_all_intra_populations(config)
 
-    # Recaptures (need pairwise)
+    # --- Recaptures (need pairwise)
     get_recaptures(config)
 
-    # ML Relate (test output in the software / and then the reliability function)
+    # ---- ML Relate (test output in the software / and then the reliability function)
     # (needs frequencies)
     write_ml_relate_input_file_genotypes(config)
     write_ml_relate_input_file_simu_families(config, nb_families=1000)
@@ -45,7 +47,7 @@ def main(
     count_nbr_relationships_from_ml_relate_output(config)
     reliability_ml_relate_based_simulated_families(config, nb_families=1000)
 
-    # Pairwise Relationships
+    # ---- Pairwise Relationships
     plot_pairwise_distances_per_relationships(config, nb_families=1000)
     compute_ks_test_between_pairwise_distance_and_relationships_simu(config, nb_families=1000)
     if config.agg_type == "pops":
@@ -61,7 +63,7 @@ if __name__ == "__main__":
     # if aggregation_type == pops: all config together for each population (merge the years)
     # if aggregation_type == pop_years: each population / year
     # if aggregation_type == subcat: account for subcategories
-    aggregation_type = "all"  # "all", "pops", "pop_years", "subcat"
+    aggregation_type = "pops"  # "all", "pops", "pop_years", "subcat"
     freq_plot_pop_order_list = (
         []
     )

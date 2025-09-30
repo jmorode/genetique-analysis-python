@@ -163,18 +163,18 @@ def plot_pairwise_distances_per_relationships(
 
     elif config.agg_type == "pops":
         for _pop in config.pops_to_select.Population.unique():
-            plot_pairwise_distances_per_relationships_per_selection(config, nb_families, _pop)
+            plot_pairwise_distances_per_relationships_per_selection(config, nb_families, config.selection_name + f"_{_pop}")
 
     elif config.agg_type == "pop_years":
         for _pop, _year in zip(config.pops_to_select.Population, config.pops_to_select.Year):
-            plot_pairwise_distances_per_relationships_per_selection(config, nb_families, f"{_pop}_{_year}")
+            plot_pairwise_distances_per_relationships_per_selection(config, nb_families, config.selection_name + f"_{_pop}_{_year}")
 
     else:  # subcat
         for _pop, _year, _sub in zip(
                 config.pops_to_select.Population, config.pops_to_select.Year, config.pops_to_select.Subcategory
         ):
             _ext = get_extension_if_subcat(_sub)
-            plot_pairwise_distances_per_relationships_per_selection(config, nb_families, f"{_pop}_{_year}{_ext}")
+            plot_pairwise_distances_per_relationships_per_selection(config, nb_families, config.selection_name + f"_{_pop}_{_year}{_ext}")
 
 
 def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(config: FileConfiguration) -> None:

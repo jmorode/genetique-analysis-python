@@ -63,18 +63,18 @@ def write_ml_relate_input_file_simu_families(
 
     elif config.agg_type == "pops":
         for _pop in config.pops_to_select.Population.unique():
-            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, _pop)
+            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, config.selection_name + f"_{_pop}")
 
     elif config.agg_type == "pop_years":
         for _pop, _year in zip(config.pops_to_select.Population, config.pops_to_select.Year):
-            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, f"{_pop}_{_year}")
+            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, config.selection_name + f"_{_pop}_{_year}")
 
     else:  # subcat
         for _pop, _year, _sub in zip(
                 config.pops_to_select.Population, config.pops_to_select.Year, config.pops_to_select.Subcategory
         ):
             _ext = get_extension_if_subcat(_sub)
-            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, f"{_pop}_{_year}{_ext}")
+            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, config.selection_name + f"_{_pop}_{_year}{_ext}")
 
 
 def count_nbr_relationships_from_ml_relate_output(

@@ -303,7 +303,7 @@ def plot_frequencies(
     df_pops = pd.DataFrame()
     if agg_type == "all":
         df_pops = pd.read_csv(
-            f"{config.output_path}/raw_data/frequencies_{selection_name}_all.csv", sep=";"
+            f"{config.output_path}/raw_data/frequencies_{config.project_name}_{selection_name}_all.csv", sep=";"
         )
         df_pops["population"] = "all"
         df_pops["legend"] = selection_name
@@ -311,7 +311,7 @@ def plot_frequencies(
     elif agg_type == "pops":
         for _pop in selection.Population.unique():
             df = pd.read_csv(
-                f"{config.output_path}/raw_data/frequencies_{selection_name}_{_pop}.csv", sep=";"
+                f"{config.output_path}/raw_data/frequencies_{config.project_name}_{selection_name}_{_pop}.csv", sep=";"
             )
             df["population"] = _pop
             df["legend"] = _pop
@@ -321,7 +321,7 @@ def plot_frequencies(
         selection = selection[["Population", "Year"]].drop_duplicates()
         for _pop, _year in zip(selection.Population, selection.Year):
             df = pd.read_csv(
-                f"{config.output_path}/raw_data/frequencies_{selection_name}_{_pop}_{_year}.csv", sep=";"
+                f"{config.output_path}/raw_data/frequencies_{config.project_name}_{selection_name}_{_pop}_{_year}.csv", sep=";"
             )
             df["population"] = _pop
             df["year"] = _year
@@ -334,7 +334,7 @@ def plot_frequencies(
         ):
             _ext = get_extension_if_subcat(_sub)
             df = pd.read_csv(
-                f"{config.output_path}/raw_data/frequencies_{selection_name}_{_pop}_{_year}{_ext}.csv",
+                f"{config.output_path}/raw_data/frequencies_{config.project_name}_{selection_name}_{_pop}_{_year}{_ext}.csv",
                 sep=";",
             )
             df["population"] = _pop
