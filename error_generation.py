@@ -1,17 +1,18 @@
+import multiprocessing as mp
 import random
 from typing import Tuple
-from joblib import Parallel, delayed
-import multiprocessing as mp
-from tqdm import tqdm
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from config import FileConfiguration
-from utils import select_a_given_pop, conversion_two_lines_to_one_lines_genotypes
 from description import calculate_frequencies
 from generation import generate_unrelated_individuals_following_frequencies
+from joblib import Parallel, delayed
 from pairwise_differences import calculate_pairwise_differences
 from recaptures import get_recaptures_sample
+from tqdm import tqdm
+from utils import conversion_two_lines_to_one_lines_genotypes, select_a_given_pop
 
 
 def get_another_allele_in_pop(
@@ -131,11 +132,18 @@ def get_random_ind_loci(
 
 
 def get_nb_recaptures_following_error_introduction(
-    config: FileConfiguration, pop_name: str, num_inds: int, error_rate: float, error_type: str, type_hezy_err: str
+    config: FileConfiguration,
+    pop_name: str,
+    num_inds: int,
+    error_rate: float,
+    error_type: str,
+    type_hezy_err: str,
 ) -> float:
     # 1/ Get N genotypes randomly following allelic frequencies of a given population
     df_genotype = select_a_given_pop(config.genotypes_two_lines, pop_name)
-    df_frequency = calculate_frequencies(config, df_genotype, config.selection_name + f"_{pop_name}_error")
+    df_frequency = calculate_frequencies(
+        config, df_genotype, config.selection_name + f"_{pop_name}_error"
+    )
     df_generated = generate_unrelated_individuals_following_frequencies(
         config, df_frequency, num_inds
     )
@@ -149,8 +157,10 @@ def get_nb_recaptures_following_error_introduction(
     df_2lgn_genotypes_err = conversion_two_lines_to_one_lines_genotypes(
         genotype_with_errors, ["POP"], config.loci_list
     )
-    df_pairwise = calculate_pairwise_differences(config, f"_{pop_name}_error", df_2lgn_genotypes_err)
-    recaptures = get_recaptures_sample(config, df_pairwise, '', False)
+    df_pairwise = calculate_pairwise_differences(
+        config, f"_{pop_name}_error", df_2lgn_genotypes_err
+    )
+    recaptures = get_recaptures_sample(config, df_pairwise, "", False)
 
     return len(recaptures)
 
@@ -241,12 +251,14 @@ def compute_avg_q95_simu(
             _hezy_err_type,
             nb_simu,
         )
-        print(name_pop,
+        print(
+            name_pop,
             nb_generated_individuals,
             err_rate,
             err_type,
             _hezy_err_type,
-            nb_simu)
+            nb_simu,
+        )
 
         plot_distrib_recap_errors(
             config, list_recap, name_pop, err_rate, err_type, _hezy_err_type, nb_simu
@@ -270,7 +282,12 @@ def compute_avg_q95_simu(
     return results
 
 
-def test_error_impact_scenarios_on_given_pop(config: FileConfiguration, name_population: str, nb_generated_inds: int, nb_evaluation_recap: int) -> None:
+def test_error_impact_scenarios_on_given_pop(
+    config: FileConfiguration,
+    name_population: str,
+    nb_generated_inds: int,
+    nb_evaluation_recap: int,
+) -> None:
     results_parallel = Parallel(n_jobs=mp.cpu_count())(
         delayed(compute_avg_q95_simu)(
             config,

@@ -49,32 +49,44 @@ def write_ml_relate_input_file_genotypes(config: FileConfiguration) -> None:
 def write_ml_relate_input_file_simu_families_per_selection(
     config: FileConfiguration, nb_families: int, selection_name: str
 ) -> None:
-    df = generate_n_families_following_frequencies_for_ml_relate(config, nb_families, selection_name)
-    write_ml_relate_input_file(
-        config, df, "simulation_families_" + selection_name
+    df = generate_n_families_following_frequencies_for_ml_relate(
+        config, nb_families, selection_name
     )
+    write_ml_relate_input_file(config, df, "simulation_families_" + selection_name)
 
 
 def write_ml_relate_input_file_simu_families(
     config: FileConfiguration, nb_families: int
 ) -> None:
     if config.agg_type == "all":
-        write_ml_relate_input_file_simu_families_per_selection(config, nb_families, config.selection_name + "_all")
+        write_ml_relate_input_file_simu_families_per_selection(
+            config, nb_families, config.selection_name + "_all"
+        )
 
     elif config.agg_type == "pops":
         for _pop in config.pops_to_select.Population.unique():
-            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, config.selection_name + f"_{_pop}")
+            write_ml_relate_input_file_simu_families_per_selection(
+                config, nb_families, config.selection_name + f"_{_pop}"
+            )
 
     elif config.agg_type == "pop_years":
-        for _pop, _year in zip(config.pops_to_select.Population, config.pops_to_select.Year):
-            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, config.selection_name + f"_{_pop}_{_year}")
+        for _pop, _year in zip(
+            config.pops_to_select.Population, config.pops_to_select.Year
+        ):
+            write_ml_relate_input_file_simu_families_per_selection(
+                config, nb_families, config.selection_name + f"_{_pop}_{_year}"
+            )
 
     else:  # subcat
         for _pop, _year, _sub in zip(
-                config.pops_to_select.Population, config.pops_to_select.Year, config.pops_to_select.Subcategory
+            config.pops_to_select.Population,
+            config.pops_to_select.Year,
+            config.pops_to_select.Subcategory,
         ):
             _ext = get_extension_if_subcat(_sub)
-            write_ml_relate_input_file_simu_families_per_selection(config, nb_families, config.selection_name + f"_{_pop}_{_year}{_ext}")
+            write_ml_relate_input_file_simu_families_per_selection(
+                config, nb_families, config.selection_name + f"_{_pop}_{_year}{_ext}"
+            )
 
 
 def count_nbr_relationships_from_ml_relate_output(
@@ -83,11 +95,9 @@ def count_nbr_relationships_from_ml_relate_output(
     df = pd.read_csv(
         f"{config.input_path}/ml_relate_output_{config.selection_name}.csv", sep=";"
     )
-    print(df)
     po_count, fs_count, hs_count, un_count = 0, 0, 0, 0
     for col in df.columns:
         relationship_counts = df[col].value_counts()
-        print(relationship_counts)
         po_count += relationship_counts.get("PO", 0)
         fs_count += relationship_counts.get("FS", 0)
         hs_count += relationship_counts.get("HS", 0)
@@ -96,7 +106,6 @@ def count_nbr_relationships_from_ml_relate_output(
     df_counts = pd.DataFrame(
         {"PO": po_count, "FS": fs_count, "HS": hs_count, "U": un_count}, index=[0]
     )
-    print(df_counts)
     return df_counts
 
 
