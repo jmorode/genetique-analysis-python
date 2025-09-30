@@ -1,6 +1,7 @@
 import pandas as pd
-from config import FileConfiguration
 from loguru import logger
+
+from ..core.config import FileConfiguration
 
 
 def get_recaptures(config: FileConfiguration) -> None:
@@ -8,8 +9,8 @@ def get_recaptures(config: FileConfiguration) -> None:
 
     if config.agg_type == "all":
         df_pairwise = pd.read_csv(
-        f"{config.output_path}/pairwise_differences/pairwise_differences_{config.selection_name}.csv",
-        sep=";",
+            f"{config.output_path}/pairwise_differences/pairwise_differences_{config.selection_name}_all.csv",
+            sep=";",
         )
         df_pairwise = df_pairwise.set_index("Sample")
         get_recaptures_sample(config, df_pairwise, config.agg_type, True)
@@ -45,11 +46,11 @@ def get_recaptures(config: FileConfiguration) -> None:
             get_recaptures_sample(config, df_pairwise, f"{_pop}_{_year}_{_sub}", True)
 
 
-
-def get_recaptures_sample(config: FileConfiguration, df_pairwise: pd.DataFrame, name: str, save_file: False) -> pd.DataFrame:
+def get_recaptures_sample(
+    config: FileConfiguration, df_pairwise: pd.DataFrame, name: str, save_file: False
+) -> pd.DataFrame:
 
     cols = list(df_pairwise.columns)
-    print(cols)
     res = pd.DataFrame()
     for _col in cols:
         recap = df_pairwise.index[df_pairwise[_col] == 0].tolist()
@@ -67,10 +68,10 @@ def get_recaptures_sample(config: FileConfiguration, df_pairwise: pd.DataFrame, 
             columns=["ind1", "ind2"],
         )
 
-        df["ind1_pop"] = df.ind1.apply(lambda x: config.dict_pop_samples[x])
-        df["ind2_pop"] = df.ind2.apply(lambda x: config.dict_pop_samples[x])
+        if save_file:
+            df["ind1_pop"] = df.ind1.apply(lambda x: config.dict_pop_samples[x])
+            df["ind2_pop"] = df.ind2.apply(lambda x: config.dict_pop_samples[x])
 
-        if save_file :
             df.to_csv(
                 f"{config.output_path}/recaptures/recaptures_{name}.csv",
                 sep=";",

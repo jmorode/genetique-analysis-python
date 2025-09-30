@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "genetique-analysis"
+version = "1.0.0"
+description = "An analysis package for microsatellites genetic data processing"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "pandas",
+    "matplotlib",
+    "scipy",
+    "loguru",
+    "joblib",
+    "tqdm",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+
+
+[project.scripts]
+genetique-analysis = "genetique_analysis.cli.main:cli_main"
+genetique-error-tests = "genetique_analysis.cli.error_tests:cli_error_tests"
+
+[tool.hatch.build.targets.wheel]
+packages = ["genetique_analysis"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/genetique_analysis",
+    "/README.md",
+    "/pyproject.toml",
+]
+
+[tool.ruff]
+line-length = 120
