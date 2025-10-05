@@ -239,7 +239,7 @@ def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
 
         # get pairwise diff
         raw_data = generate_n_families_following_frequencies_for_pairwise_distances(
-            config, nb_families=1000, selection_name=name_sample
+            config, nb_families=1000, selection_name=config.selection_name + f"_{name_sample}"
         )
 
         # recover pairwise distrib compute frequency distribution
@@ -275,7 +275,7 @@ def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
         data = data.fillna(0).set_index("nb_diff")
 
         # get stat for mean value of distribution
-        raw_data["Sample"] = df_sample["Sample"].copy()
+        raw_data["Sample"] = df_sample["Sample"].astype('float').copy()
         stats = raw_data.describe().reset_index()
 
         # Plot
