@@ -155,6 +155,7 @@ def plot_pairwise_distances_per_relationships_per_selection(
         nrows=2, ncols=2, figsize=(14, 10)
     )  # Adjust figure size as needed
 
+    df_freq_all = pd.DataFrame()
     for i, rel in enumerate(df_pairwise.columns):
         j, i = get_j_i_position_for_two_by_two_plots(i)
         df_freq = (
@@ -176,12 +177,19 @@ def plot_pairwise_distances_per_relationships_per_selection(
         ax[j, i].axhline(
             y=0.05, color="blue", linestyle="--", label="Threshold"
         )  # Add threshold line
+        df_freq["Relationship"] = rel
+        df_freq_all = pd.concat([df_freq_all, df_freq], ignore_index=True)
 
     plt.tight_layout()
     plt.savefig(
         f"{config.output_path}/pairwise_differences/plots/plot_pairwise_frequencies_by_relationships_{selection_name}.pdf"
     )
     plt.close()
+
+    df_freq_all.to_csv(
+        f"{config.output_path}/pairwise_differences/pairwise_frequencies_by_relationships_{selection_name}.csv",
+        index=False,
+    )
 
 
 def plot_pairwise_distances_per_relationships(
@@ -239,7 +247,9 @@ def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
 
         # get pairwise diff
         raw_data = generate_n_families_following_frequencies_for_pairwise_distances(
-            config, nb_families=1000, selection_name=config.selection_name + f"_{name_sample}"
+            config,
+            nb_families=1000,
+            selection_name=config.selection_name + f"_{name_sample}",
         )
 
         # recover pairwise distrib compute frequency distribution
@@ -275,7 +285,7 @@ def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
         data = data.fillna(0).set_index("nb_diff")
 
         # get stat for mean value of distribution
-        raw_data["Sample"] = df_sample["Sample"].astype('float').copy()
+        raw_data["Sample"] = df_sample["Sample"].astype("float").copy()
         stats = raw_data.describe().reset_index()
 
         # Plot

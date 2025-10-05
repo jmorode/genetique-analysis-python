@@ -21,7 +21,7 @@ def compute_ks_test_between_pairwise_distance_and_relationships_simu_per_selecti
     # take only lower triangular without diagonal
     vals = vals[np.tril_indices(len(data_ech), k=-1)]
     df_sample = pd.DataFrame({"Sample": vals})
-    df_sample["Sample"] = df_sample["Sample"].astype('float')
+    df_sample["Sample"] = df_sample["Sample"].astype("float")
 
     # Get relationship simu values
     data_sim = generate_n_families_following_frequencies_for_pairwise_distances(
