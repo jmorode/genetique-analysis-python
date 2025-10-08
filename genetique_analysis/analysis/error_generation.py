@@ -12,7 +12,11 @@ from ..core.config import FileConfiguration
 from ..utils.utils import (
     conversion_two_lines_to_one_lines_genotypes,
     select_a_given_pop,
+    set_random_seed,
 )
+
+# Set random seed for reproducibility
+set_random_seed(12)
 from .description import calculate_frequencies
 from .generation import generate_unrelated_individuals_following_frequencies
 from .pairwise_differences import calculate_pairwise_differences
@@ -234,10 +238,6 @@ def compute_avg_q95_simu(
     err_rate: float,
     err_type: str,
 ):
-    # same seed of each sub process
-    np.random.seed(42)
-    random.seed(64)
-
     results = pd.DataFrame()
     # Hezy type only use for heterozygotes allocation errors (so heterozygotes & random err type)
     if (err_type == "homozygotes") | (err_rate == 0):
