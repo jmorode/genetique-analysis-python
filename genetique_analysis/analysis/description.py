@@ -93,6 +93,71 @@ def compute_proba_same_ind(
     return proba
 
 
+def compute_proba_same_ind_siblings(
+    config: FileConfiguration, df_allele: pd.DataFrame, name: str
+) -> float:
+    """
+    Compute probability that two randomly chosen individuals with the same genotype are siblings.
+
+    This function calculates the probability that two randomly chosen individuals
+    from a population with identical genotypes across all loci are siblings.
+
+    Args:
+        config: FileConfiguration object
+        df_allele: DataFrame containing allele data
+        name: Name identifier for the population/group
+
+    Returns:
+        Probability that two randomly chosen individuals with the same genotypes are siblings
+    """
+    # Remove metadata columns
+    metadata_cols = ["Population", "Sample", "Year", "Subcategory"]
+    df_allele = df_allele.drop(columns=metadata_cols)
+
+    # Initialize probability
+    proba = 1.0
+    df_by_locus = pd.DataFrame()
+
+    # Loop over loci
+    for locus in df_allele.columns:
+        # Count alleles (exclude missing values)
+        loci_alleles = df_allele[locus].value_counts().dropna()
+
+        if len(loci_alleles) == 0:
+            continue  # Skip loci with no data
+
+        # Calculate sum of allele frequencies to the power of 2 and to the power of 4
+        allele_freqs = loci_alleles / loci_alleles.sum()
+        term_squared = sum(allele_freqs**2)
+        term_power4 = sum(allele_freqs**4)
+
+        # Update probability for this locus
+        locus_proba = (
+            0.25
+            + (0.5 * term_squared)
+            + (0.5 * np.power(term_squared, 2))
+            - (0.25 * term_power4)
+        )
+        proba *= locus_proba
+
+        # Keep info by locus
+        df_by_locus = pd.concat(
+            [
+                df_by_locus,
+                pd.DataFrame(
+                    {"pop": name, "locus": locus, "proba": locus_proba}, index=[0]
+                ),
+            ],
+            ignore_index=True,
+        )
+
+    # Save locus-specific probabilities
+    output_file = f"{config.output_path}/heterozygosity/probability_same_inds_by_loci_sibilings_{name}.csv"
+    df_by_locus.to_csv(output_file, index=False, sep=CSV_SEPARATOR)
+
+    return proba
+
+
 def _compute_proba_all_samples(
     config: FileConfiguration, selection: pd.DataFrame, selection_name: str
 ) -> pd.DataFrame:
@@ -173,6 +238,123 @@ def _compute_proba_by_subcategories(
         )
         df_probas = pd.concat([df, df_probas], ignore_index=True)
     return df_probas
+
+
+def _compute_proba_siblings_all_samples(
+    config: FileConfiguration, selection: pd.DataFrame, selection_name: str
+) -> pd.DataFrame:
+    """Compute probability for all samples combined (siblings)."""
+    df_selection = select_and_concat_all_genotypes(
+        selection, config.genotypes_two_lines
+    )
+    return pd.DataFrame(
+        {
+            "Group": selection_name,
+            "ProbabilitySameIndSiblings": compute_proba_same_ind_siblings(
+                config, df_selection, "all"
+            ),
+        },
+        index=[0],
+    )
+
+
+def _compute_proba_siblings_by_populations(
+    config: FileConfiguration, selection: pd.DataFrame
+) -> pd.DataFrame:
+    """Compute probability for each population separately (siblings)."""
+    df_probas = pd.DataFrame()
+    for pop in selection.Population.unique():
+        selec = select_a_given_pop(config.genotypes_two_lines, pop)
+        df = pd.DataFrame(
+            {
+                "Population": pop,
+                "ProbabilitySameIndSiblings": compute_proba_same_ind_siblings(
+                    config, selec, pop
+                ),
+            },
+            index=[0],
+        )
+        df_probas = pd.concat([df, df_probas], ignore_index=True)
+    return df_probas
+
+
+def _compute_proba_siblings_by_pop_years(
+    config: FileConfiguration, selection: pd.DataFrame
+) -> pd.DataFrame:
+    """Compute probability for each population-year combination (siblings)."""
+    df_probas = pd.DataFrame()
+    selection = selection[["Population", "Year"]].drop_duplicates()
+    for pop, year in zip(selection.Population, selection.Year):
+        selec = select_a_given_pop_year(config.genotypes_two_lines, pop, year)
+        df = pd.DataFrame(
+            {
+                "Population": pop,
+                "Year": year,
+                "ProbabilitySameIndSiblings": compute_proba_same_ind_siblings(
+                    config, selec, f"{pop}_{year}"
+                ),
+            },
+            index=[0],
+        )
+        df_probas = pd.concat([df, df_probas], ignore_index=True)
+    return df_probas
+
+
+def _compute_proba_siblings_by_subcategories(
+    config: FileConfiguration, selection: pd.DataFrame
+) -> pd.DataFrame:
+    """Compute probability for each population-year-subcategory combination (siblings)."""
+    df_probas = pd.DataFrame()
+    for pop, year, sub in zip(
+        selection.Population, selection.Year, selection.Subcategory
+    ):
+        selec = select_a_given_pop_year_subcat(
+            config.genotypes_two_lines, pop, year, sub
+        )
+        df = pd.DataFrame(
+            {
+                "Population": pop,
+                "Year": year,
+                "Subcategory": sub,
+                "ProbabilitySameIndSiblings": compute_proba_same_ind_siblings(
+                    config, selec, f"{pop}_{year}_{sub}"
+                ),
+            },
+            index=[0],
+        )
+        df_probas = pd.concat([df, df_probas], ignore_index=True)
+    return df_probas
+
+
+def save_proba_same_ind_siblings(config: FileConfiguration) -> None:
+    """
+    Save probability calculations for same individuals (siblings) based on aggregation type.
+
+    Args:
+        config: FileConfiguration object containing analysis parameters
+    """
+    selection = config.pops_to_select.copy()
+    selection_name = config.selection_name
+
+    # Compute probabilities based on aggregation type
+    if config.agg_type == "all":
+        df_probas = _compute_proba_siblings_all_samples(
+            config, selection, selection_name
+        )
+        selection_name += "_all"
+    elif config.agg_type == "pops":
+        df_probas = _compute_proba_siblings_by_populations(config, selection)
+        selection_name += "_pops"
+    elif config.agg_type == "pop_years":
+        df_probas = _compute_proba_siblings_by_pop_years(config, selection)
+        selection_name += "_pops_years"
+    else:  # subcat
+        df_probas = _compute_proba_siblings_by_subcategories(config, selection)
+        selection_name += "_subcat"
+
+    # Save results
+    output_file = f"{config.output_path}/heterozygosity/probability_same_inds_siblings_{selection_name}.csv"
+    df_probas.to_csv(output_file, index=False, sep=CSV_SEPARATOR)
 
 
 def save_proba_same_ind(config: FileConfiguration) -> None:

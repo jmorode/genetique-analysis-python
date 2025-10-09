@@ -10,6 +10,8 @@ from loguru import logger
 from ..analysis.description import save_proba_same_ind
 from ..analysis.error_generation import test_error_impact_scenarios_on_given_pop
 from ..core.config import FileConfiguration
+from ..utils.utils import set_random_seed
+
 
 
 def main_error_recaptures(
@@ -29,6 +31,10 @@ def main_error_recaptures(
         nb_inds_simu: Number of individuals for simulation
         nb_iterations_simu: Number of iterations for simulation
     """
+    # Initialize random seed for reproducibility
+    set_random_seed(12)
+    logger.info("Random seed initialized for reproducibility")
+
     # Initialize configuration
     config = FileConfiguration(project_name, "pops", selection_name)
     config.initialize_global()

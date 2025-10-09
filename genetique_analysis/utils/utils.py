@@ -6,11 +6,27 @@ and genotype format conversions used throughout the genetics analysis pipeline.
 """
 
 import os
+import random
 from typing import List, Optional
 
+import numpy as np
 import pandas as pd
 
 
+def set_random_seed(seed: int = 12) -> None:
+    """
+    Set random seed for reproducibility across all random number generators.
+
+    This function ensures that both Python's random module and NumPy's random
+    number generator use the same seed for consistent, reproducible results.
+
+    Args:
+        seed: Random seed value (default: 12)
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+
+    
 def create_folder_if_necessary(folder_path: str) -> None:
     """
     Create a folder if it doesn't exist.

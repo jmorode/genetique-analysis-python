@@ -14,6 +14,8 @@ from loguru import logger
 from ..analysis.description import (
     compute_frequency_and_heterozygosity,
     save_proba_same_ind,
+    save_proba_same_ind_siblings,
+
 )
 from ..analysis.generation import (
     plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop,
@@ -38,6 +40,7 @@ from ..analysis.test_stats import (
 
 # Local imports
 from ..core.config import FileConfiguration
+from ..utils.utils import set_random_seed
 
 
 def load_configuration(project_name: str) -> FileConfiguration:
@@ -107,6 +110,9 @@ def main(project_name: str) -> None:
     """
     logger.info("Starting genetics analysis pipeline")
 
+    # Initialize random seed for reproducibility
+    set_random_seed(12)
+
     # Load configuration from file
     config = load_configuration(project_name)
     logger.info("Configuration and data loaded successfully")
@@ -119,6 +125,7 @@ def main(project_name: str) -> None:
     if config.should_execute_step("step_1_frequency_heterozygosity"):
         logger.info("Step 1: Computing frequencies and heterozygosity")
         save_proba_same_ind(config)
+        save_proba_same_ind_siblings(config)
         compute_frequency_and_heterozygosity(config, population_order)
     else:
         logger.info("Step 1: Skipped (disabled in configuration)")
@@ -175,7 +182,7 @@ def main(project_name: str) -> None:
 
         if config.agg_type == "pops":
             plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
-                config
+                config, nb_families=nb_families
             )
     else:
         logger.info("Step 7: Skipped (disabled in configuration)")

@@ -1,4 +1,8 @@
+import os
 import random
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
+
 from typing import Tuple
 
 import matplotlib.pyplot as plt
@@ -11,7 +15,12 @@ from ..core.constants import rename_parents
 from ..utils.utils import (
     conversion_two_lines_to_one_lines_genotypes,
     get_extension_if_subcat,
+    set_random_seed,
 )
+
+# Set random seed for reproducibility
+set_random_seed(12)
+
 from .pairwise_differences import calculate_pairwise_differences
 
 
@@ -105,32 +114,160 @@ def generate_n_families_following_frequencies_for_ml_relate(
     return df_families
 
 
-def generate_n_families_following_frequencies_for_pairwise_distances(
-    config: FileConfiguration, nb_families: int, selection_name
+def _process_single_family_for_pairwise_distances(
+    config: FileConfiguration, frequencies: pd.DataFrame, family_id: int
 ) -> pd.DataFrame:
-    df_pairwise = pd.DataFrame()
-    for i in range(nb_families):
-        family = generate_related_individuals_following_frequencies(
-            config, selection_name
-        )
-        family = conversion_two_lines_to_one_lines_genotypes(
-            family, ["POP"], config.loci_list
-        )
-        diff_family = calculate_pairwise_differences(
-            config, config.selection_name + f"_temp", family
-        )
-        df_diff = pd.DataFrame(
-            {
-                "U": diff_family.loc["P1", "P2"],
-                "PO": diff_family.loc["P1", "F1"],
-                "FS": diff_family.loc["F1", "F2"],
-                "HS": diff_family.loc["F1", "DF"],
-            },
-            index=[0],
-        )
-        df_pairwise = pd.concat([df_pairwise, df_diff], ignore_index=True)
+    """
+    Process a single family to generate pairwise differences.
 
-    return df_pairwise
+    This is a helper function designed to be used in parallel processing.
+    It generates one family and extracts the specific pairwise differences
+    needed for relationship analysis.
+
+    Args:
+        config: FileConfiguration object containing project settings
+        frequencies: Pre-loaded frequency data to avoid repeated file I/O
+        family_id: Unique identifier for the family (used for random seed)
+
+    Returns:
+        DataFrame with pairwise differences for one family
+    """
+    # Set unique random seed for each family to ensure reproducibility
+    # while maintaining independence between families
+    set_random_seed(12 + family_id)
+
+    # Generate parents : P1 (ind1), M (ind2), P2 (ind3)
+    df_parents = generate_unrelated_individuals_following_frequencies(
+        config, frequencies, num_individuals=3
+    )
+    df_parents["POP"] = df_parents.POP.apply(lambda x: rename_parents[x])
+
+    # Generate progeny : F1, F2, DF
+    df_f1 = generate_child(config, df_parents, "P1", "M", "F1")
+    df_f2 = generate_child(config, df_parents, "P1", "M", "F2")
+    df_df = generate_child(config, df_parents, "M", "P2", "DF")
+
+    family = pd.concat([df_parents, df_f1, df_f2, df_df], ignore_index=True)
+    family = conversion_two_lines_to_one_lines_genotypes(
+        family, ["POP"], config.loci_list
+    )
+    diff_family = calculate_pairwise_differences(
+        config, config.selection_name + f"_temp", family
+    )
+
+    return pd.DataFrame(
+        {
+            "U": diff_family.loc["P1", "P2"],
+            "PO": diff_family.loc["P1", "F1"],
+            "FS": diff_family.loc["F1", "F2"],
+            "HS": diff_family.loc["F1", "DF"],
+        },
+        index=[0],
+    )
+
+
+def generate_n_families_following_frequencies_for_pairwise_distances(
+    config: FileConfiguration,
+    nb_families: int,
+    selection_name: str,
+    max_workers: int = None,
+    use_parallel: bool = True,
+) -> pd.DataFrame:
+    """
+    Generate multiple families and calculate pairwise distances using parallel processing.
+
+    This optimized version uses parallel processing to generate families concurrently,
+    significantly improving performance for large numbers of families. It also loads
+    the frequency data once to avoid repeated file I/O operations.
+
+    Args:
+        config: FileConfiguration object containing project settings
+        nb_families: Number of families to generate
+        selection_name: Name of the selection for frequency data
+        max_workers: Maximum number of parallel workers (default: CPU count)
+        use_parallel: Whether to use parallel processing (fallback to sequential if False)
+
+    Returns:
+        DataFrame with pairwise differences for all families
+    """
+    # Load frequency data once to avoid repeated file I/O
+    frequencies = pd.read_csv(
+        f"{config.output_path}/raw_data/frequencies_{config.project_name}_{selection_name}.csv",
+        sep=";",
+    )
+
+    if not use_parallel or nb_families < 2:
+        # Fallback to sequential processing for small numbers or when parallel is disabled
+        return _generate_families_sequential(config, frequencies, nb_families)
+
+    if max_workers is None:
+        max_workers = min(os.cpu_count() or 1, nb_families)
+
+    try:
+        # Use parallel processing for family generation
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            # Create partial function with fixed config and frequencies
+            process_func = partial(
+                _process_single_family_for_pairwise_distances, config, frequencies
+            )
+
+            # Submit all family processing tasks
+            future_to_family = {
+                executor.submit(process_func, family_id): family_id
+                for family_id in range(nb_families)
+            }
+
+            # Collect results as they complete
+            results = []
+            for future in as_completed(future_to_family):
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as exc:
+                    family_id = future_to_family[future]
+                    print(f"Family {family_id} generated an exception: {exc}")
+                    raise
+
+        # Concatenate all results at once (more efficient than loop concatenation)
+        if results:
+            df_pairwise = pd.concat(results, ignore_index=True)
+        else:
+            df_pairwise = pd.DataFrame(columns=["U", "PO", "FS", "HS"])
+
+        return df_pairwise
+
+    except Exception as e:
+        print(f"Parallel processing failed: {e}")
+        print("Falling back to sequential processing...")
+        return _generate_families_sequential(config, frequencies, nb_families)
+
+
+def _generate_families_sequential(
+    config: FileConfiguration, frequencies: pd.DataFrame, nb_families: int
+) -> pd.DataFrame:
+    """
+    Sequential fallback for family generation when parallel processing fails.
+
+    Args:
+        config: FileConfiguration object containing project settings
+        frequencies: Pre-loaded frequency data
+        nb_families: Number of families to generate
+
+    Returns:
+        DataFrame with pairwise differences for all families
+    """
+    results = []
+    for family_id in range(nb_families):
+        result = _process_single_family_for_pairwise_distances(
+            config, frequencies, family_id
+        )
+        results.append(result)
+
+    if results:
+        return pd.concat(results, ignore_index=True)
+    else:
+        return pd.DataFrame(columns=["U", "PO", "FS", "HS"])
+
 
 
 def get_j_i_position_for_two_by_two_plots(i: int) -> Tuple[int, int]:
@@ -155,6 +292,8 @@ def plot_pairwise_distances_per_relationships_per_selection(
         nrows=2, ncols=2, figsize=(14, 10)
     )  # Adjust figure size as needed
 
+
+    df_freq_all = pd.DataFrame()
     for i, rel in enumerate(df_pairwise.columns):
         j, i = get_j_i_position_for_two_by_two_plots(i)
         df_freq = (
@@ -177,11 +316,27 @@ def plot_pairwise_distances_per_relationships_per_selection(
             y=0.05, color="blue", linestyle="--", label="Threshold"
         )  # Add threshold line
 
+        # Save number of individuals simulated per relationship and number of differences
+        df_freq_individuals = (
+            df_pairwise[rel]
+            .value_counts()
+            .reset_index()
+            .rename(columns={rel: "nb_diff"})
+        )
+        df_freq_individuals["Relationship"] = rel
+        df_freq_all = pd.concat([df_freq_all, df_freq_individuals], ignore_index=True)
+
     plt.tight_layout()
     plt.savefig(
         f"{config.output_path}/pairwise_differences/plots/plot_pairwise_frequencies_by_relationships_{selection_name}.pdf"
     )
     plt.close()
+
+    df_freq_all.sort_values(by=["Relationship", "nb_diff"]).to_csv(
+        f"{config.output_path}/pairwise_differences/pairwise_frequencies_by_relationships_{selection_name}.csv",
+        index=False,
+        sep=";",
+    )
 
 
 def plot_pairwise_distances_per_relationships(
@@ -219,7 +374,7 @@ def plot_pairwise_distances_per_relationships(
 
 
 def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
-    config: FileConfiguration,
+    config: FileConfiguration, nb_families: int
 ) -> None:
     assert config.agg_type == "pops"
     pdf = PdfPages(
@@ -239,7 +394,9 @@ def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
 
         # get pairwise diff
         raw_data = generate_n_families_following_frequencies_for_pairwise_distances(
-            config, nb_families=1000, selection_name=name_sample
+            config,
+            nb_families=nb_families,
+            selection_name=config.selection_name + f"_{name_sample}",
         )
 
         # recover pairwise distrib compute frequency distribution
@@ -275,7 +432,8 @@ def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
         data = data.fillna(0).set_index("nb_diff")
 
         # get stat for mean value of distribution
-        raw_data["Sample"] = df_sample["Sample"].copy()
+        raw_data["Sample"] = df_sample["Sample"].astype("float").copy()
+
         stats = raw_data.describe().reset_index()
 
         # Plot
