@@ -2,6 +2,7 @@ import os
 import random
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
+
 from typing import Tuple
 
 import matplotlib.pyplot as plt
@@ -19,6 +20,7 @@ from ..utils.utils import (
 
 # Set random seed for reproducibility
 set_random_seed(12)
+
 from .pairwise_differences import calculate_pairwise_differences
 
 
@@ -267,6 +269,7 @@ def _generate_families_sequential(
         return pd.DataFrame(columns=["U", "PO", "FS", "HS"])
 
 
+
 def get_j_i_position_for_two_by_two_plots(i: int) -> Tuple[int, int]:
     if i < 2:
         j = 0
@@ -288,6 +291,7 @@ def plot_pairwise_distances_per_relationships_per_selection(
     fig, ax = plt.subplots(
         nrows=2, ncols=2, figsize=(14, 10)
     )  # Adjust figure size as needed
+
 
     df_freq_all = pd.DataFrame()
     for i, rel in enumerate(df_pairwise.columns):
@@ -429,6 +433,7 @@ def plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop(
 
         # get stat for mean value of distribution
         raw_data["Sample"] = df_sample["Sample"].astype("float").copy()
+
         stats = raw_data.describe().reset_index()
 
         # Plot

@@ -15,6 +15,7 @@ from ..analysis.description import (
     compute_frequency_and_heterozygosity,
     save_proba_same_ind,
     save_proba_same_ind_siblings,
+
 )
 from ..analysis.generation import (
     plot_cumulated_and_not_frequencies_for_simu_relationships_and_sample_by_pop,
@@ -40,17 +41,6 @@ from ..analysis.test_stats import (
 # Local imports
 from ..core.config import FileConfiguration
 from ..utils.utils import set_random_seed
-
-
-def initialize_random_seed(seed: int = 12) -> None:
-    """
-    Initialize random seeds for reproducibility across all random number generators.
-
-    Args:
-        seed: Random seed value (default: 12)
-    """
-    set_random_seed(seed)
-    logger.info(f"Random seed initialized to {seed} for reproducibility")
 
 
 def load_configuration(project_name: str) -> FileConfiguration:
@@ -121,7 +111,7 @@ def main(project_name: str) -> None:
     logger.info("Starting genetics analysis pipeline")
 
     # Initialize random seed for reproducibility
-    initialize_random_seed(12)
+    set_random_seed(12)
 
     # Load configuration from file
     config = load_configuration(project_name)

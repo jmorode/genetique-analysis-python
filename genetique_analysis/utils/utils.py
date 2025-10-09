@@ -26,7 +26,7 @@ def set_random_seed(seed: int = 12) -> None:
     random.seed(seed)
     np.random.seed(seed)
 
-
+    
 def create_folder_if_necessary(folder_path: str) -> None:
     """
     Create a folder if it doesn't exist.

@@ -17,6 +17,7 @@ from ..utils.utils import (
 
 # Set random seed for reproducibility
 set_random_seed(12)
+
 from .description import calculate_frequencies
 from .generation import generate_unrelated_individuals_following_frequencies
 from .pairwise_differences import calculate_pairwise_differences
