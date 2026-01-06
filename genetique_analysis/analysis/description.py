@@ -52,8 +52,11 @@ def compute_proba_same_ind(
 
     # Loop over loci
     for locus in df_allele.columns:
-        # Count alleles (exclude missing values)
-        loci_alleles = df_allele[locus].value_counts().dropna()
+        # Count alleles (exclude missing values: 0 and NaN)
+        # Filter out missing data (0 represents missing alleles)
+        locus_data = df_allele[locus].dropna()
+        locus_data = locus_data[locus_data != 0]  # Exclude 0 values (missing data)
+        loci_alleles = locus_data.value_counts()
 
         if len(loci_alleles) == 0:
             continue  # Skip loci with no data
@@ -120,8 +123,11 @@ def compute_proba_same_ind_siblings(
 
     # Loop over loci
     for locus in df_allele.columns:
-        # Count alleles (exclude missing values)
-        loci_alleles = df_allele[locus].value_counts().dropna()
+        # Count alleles (exclude missing values: 0 and NaN)
+        # Filter out missing data (0 represents missing alleles)
+        locus_data = df_allele[locus].dropna()
+        locus_data = locus_data[locus_data != 0]  # Exclude 0 values (missing data)
+        loci_alleles = locus_data.value_counts()
 
         if len(loci_alleles) == 0:
             continue  # Skip loci with no data
@@ -405,8 +411,11 @@ def calculate_frequencies(
     df = pd.DataFrame()
 
     for locus in config.loci_list:
-        # Count alleles and calculate frequencies
-        allele_counts = selection_genotypes_two_lines[locus].value_counts().dropna()
+        # Count alleles and calculate frequencies (exclude missing values: 0 and NaN)
+        # Filter out missing data (0 represents missing alleles)
+        locus_data = selection_genotypes_two_lines[locus].dropna()
+        locus_data = locus_data[locus_data != 0]  # Exclude 0 values (missing data)
+        allele_counts = locus_data.value_counts()
         if len(allele_counts) == 0:
             continue  # Skip loci with no data
 
@@ -433,7 +442,6 @@ def calculate_frequencies(
 def heterozygosity_calculation(
     config: FileConfiguration,
     df_frequencies: pd.DataFrame,
-    selection_genotypes_two_lines: pd.DataFrame,
     selection_name: str,
 ) -> Tuple[pd.DataFrame, float]:
     """
@@ -442,7 +450,6 @@ def heterozygosity_calculation(
     Args:
         config: FileConfiguration object
         df_frequencies: DataFrame containing allele frequencies
-        selection_genotypes_two_lines: DataFrame containing genotype data
         selection_name: Name identifier for the selection
 
     Returns:
@@ -512,7 +519,7 @@ def frequency_and_heterozygosity_all_samples(
         config, df_selection, selection_name + "_all"
     )
     he_distr, he_value = heterozygosity_calculation(
-        config, df_frequencies, selection, selection_name
+        config, df_frequencies, selection_name
     )
     df_heterozygosity = pd.DataFrame(
         {"Group": selection_name, "Heterozygosity": he_value}, index=[0]
@@ -531,7 +538,7 @@ def frequency_and_heterozygosity_pops(
             config, selec, config.selection_name + f"_{_pop}"
         )
         he_distr, he_value = heterozygosity_calculation(
-            config, df_frequencies, selec, selection_name
+            config, df_frequencies, selection_name
         )
         df = pd.DataFrame({"Population": _pop, "Heterozygosity": he_value}, index=[0])
         df_heterozygosity = pd.concat([df, df_heterozygosity], ignore_index=True)
@@ -550,7 +557,7 @@ def frequency_and_heterozygosity_pop_years(
             config, selec, config.selection_name + f"_{_pop}_{_year}"
         )
         he_distr, he_value = heterozygosity_calculation(
-            config, df_frequencies, selec, f"{_pop}_{_year}"
+            config, df_frequencies, f"{_pop}_{_year}"
         )
 
         df = pd.DataFrame(
@@ -576,7 +583,7 @@ def frequency_and_heterozygosity_subcat(
             config, selec, config.selection_name + f"_{_pop}_{_year}{_ext}"
         )
         he_distr, he_value = heterozygosity_calculation(
-            config, df_frequencies, selec, f"{_pop}_{_year}{_ext}"
+            config, df_frequencies, f"{_pop}_{_year}{_ext}"
         )
 
         df = pd.DataFrame(
