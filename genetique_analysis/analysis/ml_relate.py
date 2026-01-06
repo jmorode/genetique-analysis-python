@@ -37,9 +37,11 @@ def reformat_genotypes_selection_for_ml_relate(
     )
 
     for locus in config.loci_list:
-        df_genotypes[locus] = df_genotypes[f"{locus}_1"].astype(str) + df_genotypes[
-            f"{locus}_2"
-        ].astype(str)
+        # Format alleles as 3-digit numbers with leading zeros (e.g., 5 -> "005", 42 -> "042")
+        df_genotypes[locus] = (
+            df_genotypes[f"{locus}_1"].apply(lambda x: f"{int(x):03d}" if pd.notna(x) else "000")
+            + df_genotypes[f"{locus}_2"].apply(lambda x: f"{int(x):03d}" if pd.notna(x) else "000")
+        )
     df_genotypes = df_genotypes[["Sample"] + list(config.loci_list)]
     df_genotypes["Sample"] = df_genotypes.Sample.apply(lambda x: x + ",")
     return df_genotypes
