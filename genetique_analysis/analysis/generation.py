@@ -107,9 +107,11 @@ def generate_n_families_following_frequencies_for_ml_relate(
         df_families, ["POP"], config.loci_list
     )
     for locus in config.loci_list:
-        df_families[locus] = df_families[f"{locus}_1"].astype(str) + df_families[
-            f"{locus}_2"
-        ].astype(str)
+        # Format alleles as 3-digit numbers with leading zeros (e.g., 5 -> "005", 42 -> "042")
+        df_families[locus] = (
+            df_families[f"{locus}_1"].apply(lambda x: f"{int(x):03d}" if pd.notna(x) else "000")
+            + df_families[f"{locus}_2"].apply(lambda x: f"{int(x):03d}" if pd.notna(x) else "000")
+        )
     df_families = df_families[["POP"] + list(config.loci_list)]
     return df_families
 
@@ -151,9 +153,49 @@ def _process_single_family_for_pairwise_distances(
     family = conversion_two_lines_to_one_lines_genotypes(
         family, ["POP"], config.loci_list
     )
-    diff_family = calculate_pairwise_differences(
-        config, config.selection_name + f"_temp", family
-    )
+
+    # Add missing metadata columns to match expected format for calculate_pairwise_differences
+    # Expected format: Sample, Population, Year, Subcategory, then loci
+    family_formatted = family.copy()
+    family_formatted.insert(1, "Population", family_formatted["POP"])
+    family_formatted.insert(2, "Year", "")
+    family_formatted.insert(3, "Subcategory", "")
+    # Rename POP to Sample to match expected column name
+    family_formatted = family_formatted.rename(columns={"POP": "Sample"})
+
+    # Temporarily add generated family labels to dict_pop_samples if it exists
+    # to avoid KeyError when mapping in calculate_pairwise_differences
+    original_dict = None
+    dict_was_none = False
+    if hasattr(config, 'dict_pop_samples'):
+        if config.dict_pop_samples is not None:
+            original_dict = config.dict_pop_samples.copy()
+            for sample in family_formatted["Sample"].unique():
+                if sample not in config.dict_pop_samples:
+                    config.dict_pop_samples[sample] = "Generated"
+        else:
+            # Initialize dict_pop_samples if it's None
+            dict_was_none = True
+            config.dict_pop_samples = {}
+            for sample in family_formatted["Sample"].unique():
+                config.dict_pop_samples[sample] = "Generated"
+    else:
+        # Create dict_pop_samples if it doesn't exist
+        config.dict_pop_samples = {}
+        for sample in family_formatted["Sample"].unique():
+            config.dict_pop_samples[sample] = "Generated"
+    
+    try:
+        diff_family = calculate_pairwise_differences(
+            config, config.selection_name + f"_temp", family_formatted
+        )
+
+    finally:
+        # Restore original dict_pop_samples if we modified it
+        if original_dict is not None:
+            config.dict_pop_samples = original_dict
+        elif dict_was_none:
+            config.dict_pop_samples = None
 
     return pd.DataFrame(
         {
