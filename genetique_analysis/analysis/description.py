@@ -657,7 +657,7 @@ def plot_frequencies(
     df_pops = df_pops.sort_values(by=["locus", "allele", "population"])
     plot_index_row, plot_index_col = 0, 0
     nb_plots = len(df_pops.locus.unique())
-    nbr_rows_plots = int(np.ceil(nb_plots) / 3) if int(np.ceil(nb_plots) / 3) > 1 else 2
+    nbr_rows_plots = int(np.ceil(nb_plots / 3)) if int(np.ceil(nb_plots / 3)) > 1 else 2
     _, ax = plt.subplots(nbr_rows_plots, 3, figsize=(30, 10 * nbr_rows_plots))
 
     for _loc in df_pops.locus.unique():
@@ -680,8 +680,8 @@ def plot_frequencies(
             plot_index_col += 1
 
     # remove axis of empty plots
-    if (nb_plots % 3 != 0) | (int(np.ceil(nb_plots / 3)) == 1):
-        while plot_index_row < 3:
+    if nb_plots % 3 != 0:
+        while plot_index_row < 3 and plot_index_col < nbr_rows_plots:
             ax[plot_index_col, plot_index_row].set_axis_off()
             plot_index_row += 1
 
