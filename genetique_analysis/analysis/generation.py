@@ -11,7 +11,7 @@ import pandas as pd
 from matplotlib.backends.backend_pdf import PdfPages
 
 from ..core.config import FileConfiguration
-from ..core.constants import rename_parents
+from ..core.constants import RENAME_PARENTS
 from ..utils.utils import (
     conversion_two_lines_to_one_lines_genotypes,
     get_extension_if_subcat,
@@ -80,7 +80,7 @@ def generate_related_individuals_following_frequencies(
     df_parents = generate_unrelated_individuals_following_frequencies(
         config, frequencies, num_individuals=3
     )
-    df_parents["POP"] = df_parents.POP.apply(lambda x: rename_parents[x])
+    df_parents["POP"] = df_parents.POP.apply(lambda x: RENAME_PARENTS[x])
 
     # Generate progeny : F1, F2, DF
     df_f1 = generate_child(config, df_parents, "P1", "M", "F1")
@@ -163,7 +163,7 @@ def _process_single_family_for_pairwise_distances(
     df_parents = generate_unrelated_individuals_following_frequencies(
         config, frequencies, num_individuals=3
     )
-    df_parents["POP"] = df_parents.POP.apply(lambda x: rename_parents[x])
+    df_parents["POP"] = df_parents.POP.apply(lambda x: RENAME_PARENTS[x])
 
     # Generate progeny : F1, F2, DF
     df_f1 = generate_child(config, df_parents, "P1", "M", "F1")

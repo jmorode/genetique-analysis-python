@@ -5,24 +5,26 @@ This module contains all constant values used throughout the genetics analysis p
 including ML-related constants, family relationship mappings, and other fixed values.
 """
 
-from typing import Any, Dict
+from typing import Dict
+import numpy as np
 
 # ML Relate Constants
 # Reference array for ML-related relationship comparisons
-# Note: REFERENCE_ARRAY is defined below after numpy import
-
-# Family member ordering for ML-related analysis
-ORDER_INDS_FAMILY: Dict[str, int] = {
-    "P1": 1,
-    "M": 2,
-    "P2": 3,
-    "F1": 4,
-    "F2": 5,
-    "DF": 6,
-}
-
 # Number of individuals per relationship type
 NB_IND_RELATION: Dict[str, int] = {"PO": 6, "U": 6, "FS": 1, "HS": 2}
+
+# Order : DF M F1 F2 P1 P2
+REFERENCE_ARRAY = np.array(
+    [
+        ["-", np.nan, np.nan, np.nan, np.nan, np.nan],
+        ["PO", "-", np.nan, np.nan, np.nan, np.nan],
+        ["HS", "PO", "-", np.nan, np.nan, np.nan],
+        ["HS", "PO", "FS", "-", np.nan, np.nan],
+        ["U", "U", "PO", "PO", "-", np.nan],
+        ["PO", "U", "U", "U", "U", "-"],
+    ],
+    dtype=object,
+)
 
 # Generation Constants
 # Mapping for renaming parent individuals in family generation
@@ -64,38 +66,3 @@ HETEROZYGOTE_ERROR_TYPES = ["hetero-random", "hetero-biased"]
 # Statistical constants
 KS_TEST_ALPHA = 0.05
 Q95_THRESHOLD = 0.95
-
-# Backward compatibility - keeping original names for existing code
-# Note: These will be defined below after numpy import
-
-# Numpy-dependent constants (defined with try-except for optional dependency)
-try:
-    import numpy as np
-
-    # ML Relate Constants
-    # Reference array for ML-related relationship comparisons
-    REFERENCE_ARRAY = np.array(
-        [
-            ["-", np.nan, np.nan, np.nan, np.nan, np.nan],
-            ["U", "-", np.nan, np.nan, np.nan, np.nan],
-            ["U", "U", "-", np.nan, np.nan, np.nan],
-            ["PO", "PO", "U", "-", np.nan, np.nan],
-            ["PO", "PO", "U", "FS", "-", np.nan],
-            ["U", "PO", "PO", "HS", "HS", "-"],
-        ],
-        dtype=object,
-    )
-
-    # Backward compatibility - keeping original names for existing code
-    reference_array = REFERENCE_ARRAY
-    order_inds_family = ORDER_INDS_FAMILY
-    nb_ind_relation = NB_IND_RELATION
-    rename_parents = RENAME_PARENTS
-
-except ImportError:
-    # If numpy is not available, define placeholder values
-    REFERENCE_ARRAY = None
-    reference_array = None
-    order_inds_family = ORDER_INDS_FAMILY
-    nb_ind_relation = NB_IND_RELATION
-    rename_parents = RENAME_PARENTS
