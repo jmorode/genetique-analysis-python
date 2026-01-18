@@ -99,7 +99,8 @@ def generate_n_families_following_frequencies_for_ml_relate(
         family = generate_related_individuals_following_frequencies(
             config, selection_name
         )
-        family["POP"] = family.POP.apply(lambda x: x + f"_{i},")
+        # Zero-pad family number to 4 digits (e.g., 0 -> 0000, 1 -> 0001)
+        family["POP"] = family.POP.apply(lambda x: x + f"_{i:04d},")
         df_families = pd.concat([df_families, family], ignore_index=True)
 
     # reformat for ml_relate
@@ -113,6 +114,26 @@ def generate_n_families_following_frequencies_for_ml_relate(
             + df_families[f"{locus}_2"].apply(lambda x: f"{int(x):03d}" if pd.notna(x) else "000")
         )
     df_families = df_families[["POP"] + list(config.loci_list)]
+    
+    # Sort to keep families together and in numeric order
+    # Extract family number and individual type for sorting
+    # POP format: "DF_0000," -> extract "0000" and "DF"
+    df_families["_family_num"] = df_families["POP"].apply(
+        lambda x: int(x.rstrip(',').split('_')[1]) if len(x.rstrip(',').split('_')) == 2 else 999999
+    )
+    df_families["_ind_type"] = df_families["POP"].apply(
+        lambda x: x.rstrip(',').split('_')[0] if len(x.rstrip(',').split('_')) == 2 else "ZZZ"
+    )
+    # Define order within family: DF, M, F1, F2, P1, P2
+    ind_order = {"DF": 0, "M": 1, "F1": 2, "F2": 3, "P1": 4, "P2": 5}
+    df_families["_ind_order"] = df_families["_ind_type"].apply(lambda x: ind_order.get(x, 99))
+    
+    # Sort by family number first, then by individual order within family
+    df_families = df_families.sort_values(by=["_family_num", "_ind_order"]).reset_index(drop=True)
+    
+    # Remove temporary sorting columns
+    df_families = df_families.drop(columns=["_family_num", "_ind_type", "_ind_order"])
+    
     return df_families
 
 
