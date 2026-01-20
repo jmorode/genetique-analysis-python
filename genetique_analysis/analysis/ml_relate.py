@@ -150,11 +150,11 @@ def compare_numpy_arrays(
     return matching_counts, mismatches_counts
 
 
-def add_missing_relationships_matches(df: pd.DataFrame) -> pd.DataFrame:
+def add_missing_relationships_matches(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
     for _rel in ["PO", "FS", "HS", "U"]:
-        if _rel not in df["true_relation"].to_list():
+        if _rel not in df[col_name].to_list():
             df = pd.concat(
-                [df, pd.DataFrame({"true_relation": _rel, "count": 0}, index=[0])]
+                [df, pd.DataFrame({col_name: _rel, "count": 0}, index=[0])]
             )
     return df
 
@@ -187,7 +187,7 @@ def get_percentage_and_count_relationships_families(
     df_stats: pd.DataFrame, meta_col: list[str], nb_families: int
 ) -> pd.DataFrame:
     df_stats = df_stats.groupby(meta_col)["count"].sum().reset_index()
-    df_stats = add_missing_relationships_matches(df_stats)
+    df_stats = add_missing_relationships_matches(df_stats,meta_col[0])
     df_stats["percentage"] = df_stats.apply(
         lambda x: x["count"] / (NB_IND_RELATION[x[meta_col[0]]] * nb_families) * 100,
         axis=1,
@@ -218,8 +218,11 @@ def overall_stats_relationships_simulated_families(
     df_matching_stats = get_percentage_and_count_relationships_families(
         df_matching_stats, ["true_relation"], nb_families
     )
+    df_mismatching_rel = get_percentage_and_count_relationships_families(
+        df_mismatching_stats, ["true_relation"], nb_families
+    )
     df_mismatching_stats = get_percentage_and_count_relationships_families(
-        df_mismatching_stats, ["found_relation", "true_relation"], nb_families
+        df_mismatching_stats, ["found_relation","true_relation"], nb_families
     )
 
     # Format output file
@@ -230,39 +233,40 @@ def overall_stats_relationships_simulated_families(
                 "Total percentage of correct relationships",
                 "Total percentage of incorrect relationships",
                 "Average percentage of correct relationships",
-                "Percentage of incorrect PO",
-                "Percentage of incorrect FS",
-                "Percentage of incorrect HS",
-                "Percentage of incorrect U",
             ],
             "percentage": [
                 get_total_percentage_over_families(df_matching_stats, nb_families),
                 get_total_percentage_over_families(df_mismatching_stats, nb_families),
                 df_matching_stats.percentage.mean(),
-                get_sum_percentage_by_category(df_mismatching_stats, "PO"),
-                get_sum_percentage_by_category(df_mismatching_stats, "FS"),
-                get_sum_percentage_by_category(df_mismatching_stats, "HS"),
-                get_sum_percentage_by_category(df_mismatching_stats, "U"),
             ],
         }
     )
-    # Correct by relationships
+    # Incorrect relationships
+    df_mismatching_rel["true_relation"] = df_mismatching_rel["true_relation"].apply(
+        lambda x: "Percentage of incorrectly found " + x
+    )
+    df_mismatching_rel = df_mismatching_rel.rename(columns={"true_relation": "category"})
+
+    # Correct relationships
     df_matching_stats["true_relation"] = df_matching_stats["true_relation"].apply(
-        lambda x: "Percentage of correct " + x
+        lambda x: "Percentage of correctly found " + x
     )
     df_matching_stats = df_matching_stats.rename(columns={"true_relation": "category"})
 
     # Incorrect by relationships
     df_mismatching_stats["category"] = df_mismatching_stats.apply(
-        lambda x: "Percentage of incorrect "
+        lambda x: "Percentage of incorrectly found "
         + x.found_relation
-        + " that should be "
-        + x.true_relation,
+        + " that should have been "
+        + x.true_relation
+        + " over total expected number of "
+        + x.found_relation,
         axis=1,
     )
     df_global_stats = pd.concat(
         [
             df_reliability,
+            df_mismatching_rel,
             df_matching_stats,
             df_mismatching_stats.drop(columns=["true_relation", "found_relation"]),
         ],
