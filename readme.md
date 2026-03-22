@@ -48,6 +48,8 @@ pip install -e .
        └── outputs/
    ```
 
+   **Important**: In the `genotypes.csv` file, missing alleles must be represented as `0`. Do not use empty cells, `NA`, `NaN`, or any other placeholder for missing data.
+
 2. **Create a configuration file** (`projects/your_project/inputs/config.json`):
    ```json
    {

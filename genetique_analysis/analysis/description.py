@@ -52,8 +52,11 @@ def compute_proba_same_ind(
 
     # Loop over loci
     for locus in df_allele.columns:
-        # Count alleles (exclude missing values)
-        loci_alleles = df_allele[locus].value_counts().dropna()
+        # Count alleles (exclude missing values: 0 and NaN)
+        # Filter out missing data (0 represents missing alleles)
+        locus_data = df_allele[locus].dropna()
+        locus_data = locus_data[locus_data != 0]  # Exclude 0 values (missing data)
+        loci_alleles = locus_data.value_counts()
 
         if len(loci_alleles) == 0:
             continue  # Skip loci with no data
@@ -120,8 +123,11 @@ def compute_proba_same_ind_siblings(
 
     # Loop over loci
     for locus in df_allele.columns:
-        # Count alleles (exclude missing values)
-        loci_alleles = df_allele[locus].value_counts().dropna()
+        # Count alleles (exclude missing values: 0 and NaN)
+        # Filter out missing data (0 represents missing alleles)
+        locus_data = df_allele[locus].dropna()
+        locus_data = locus_data[locus_data != 0]  # Exclude 0 values (missing data)
+        loci_alleles = locus_data.value_counts()
 
         if len(loci_alleles) == 0:
             continue  # Skip loci with no data
@@ -405,8 +411,11 @@ def calculate_frequencies(
     df = pd.DataFrame()
 
     for locus in config.loci_list:
-        # Count alleles and calculate frequencies
-        allele_counts = selection_genotypes_two_lines[locus].value_counts().dropna()
+        # Count alleles and calculate frequencies (exclude missing values: 0 and NaN)
+        # Filter out missing data (0 represents missing alleles)
+        locus_data = selection_genotypes_two_lines[locus].dropna()
+        locus_data = locus_data[locus_data != 0]  # Exclude 0 values (missing data)
+        allele_counts = locus_data.value_counts()
         if len(allele_counts) == 0:
             continue  # Skip loci with no data
 
@@ -433,7 +442,6 @@ def calculate_frequencies(
 def heterozygosity_calculation(
     config: FileConfiguration,
     df_frequencies: pd.DataFrame,
-    selection_genotypes_two_lines: pd.DataFrame,
     selection_name: str,
 ) -> Tuple[pd.DataFrame, float]:
     """
@@ -442,7 +450,6 @@ def heterozygosity_calculation(
     Args:
         config: FileConfiguration object
         df_frequencies: DataFrame containing allele frequencies
-        selection_genotypes_two_lines: DataFrame containing genotype data
         selection_name: Name identifier for the selection
 
     Returns:
@@ -512,7 +519,7 @@ def frequency_and_heterozygosity_all_samples(
         config, df_selection, selection_name + "_all"
     )
     he_distr, he_value = heterozygosity_calculation(
-        config, df_frequencies, selection, selection_name
+        config, df_frequencies, selection_name
     )
     df_heterozygosity = pd.DataFrame(
         {"Group": selection_name, "Heterozygosity": he_value}, index=[0]
@@ -531,7 +538,7 @@ def frequency_and_heterozygosity_pops(
             config, selec, config.selection_name + f"_{_pop}"
         )
         he_distr, he_value = heterozygosity_calculation(
-            config, df_frequencies, selec, selection_name
+            config, df_frequencies, selection_name
         )
         df = pd.DataFrame({"Population": _pop, "Heterozygosity": he_value}, index=[0])
         df_heterozygosity = pd.concat([df, df_heterozygosity], ignore_index=True)
@@ -550,7 +557,7 @@ def frequency_and_heterozygosity_pop_years(
             config, selec, config.selection_name + f"_{_pop}_{_year}"
         )
         he_distr, he_value = heterozygosity_calculation(
-            config, df_frequencies, selec, f"{_pop}_{_year}"
+            config, df_frequencies, f"{_pop}_{_year}"
         )
 
         df = pd.DataFrame(
@@ -576,7 +583,7 @@ def frequency_and_heterozygosity_subcat(
             config, selec, config.selection_name + f"_{_pop}_{_year}{_ext}"
         )
         he_distr, he_value = heterozygosity_calculation(
-            config, df_frequencies, selec, f"{_pop}_{_year}{_ext}"
+            config, df_frequencies, f"{_pop}_{_year}{_ext}"
         )
 
         df = pd.DataFrame(
@@ -650,7 +657,7 @@ def plot_frequencies(
     df_pops = df_pops.sort_values(by=["locus", "allele", "population"])
     plot_index_row, plot_index_col = 0, 0
     nb_plots = len(df_pops.locus.unique())
-    nbr_rows_plots = int(np.ceil(nb_plots) / 3) if int(np.ceil(nb_plots) / 3) > 1 else 2
+    nbr_rows_plots = int(np.ceil(nb_plots / 3)) if int(np.ceil(nb_plots / 3)) > 1 else 2
     _, ax = plt.subplots(nbr_rows_plots, 3, figsize=(30, 10 * nbr_rows_plots))
 
     for _loc in df_pops.locus.unique():
@@ -673,8 +680,8 @@ def plot_frequencies(
             plot_index_col += 1
 
     # remove axis of empty plots
-    if (nb_plots % 3 != 0) | (int(np.ceil(nb_plots / 3)) == 1):
-        while plot_index_row < 3:
+    if nb_plots % 3 != 0:
+        while plot_index_row < 3 and plot_index_col < nbr_rows_plots:
             ax[plot_index_col, plot_index_row].set_axis_off()
             plot_index_row += 1
 
@@ -697,6 +704,211 @@ def plot_frequencies(
     )
 
 
+def compute_observed_heterozygosity(
+    config: FileConfiguration,
+    selection_genotypes_two_lines: pd.DataFrame,
+    selection_name: str,
+) -> Tuple[pd.DataFrame, float]:
+    """
+    Calculate observed heterozygosity (Ho) for each locus and globally.
+
+    This function computes the observed heterozygosity by counting the proportion
+    of heterozygous individuals at each locus.
+
+    Args:
+        config: FileConfiguration object
+        selection_genotypes_two_lines: DataFrame containing genotype data in two-line format
+        selection_name: Name identifier for the selection
+
+    Returns:
+        Tuple of (DataFrame with observed heterozygosity by locus, mean observed heterozygosity)
+    """
+    df_ho = pd.DataFrame()
+
+    # Get unique samples names
+    unique_samples = selection_genotypes_two_lines["Sample"].unique()
+
+    # For each locus, compute Ho
+    for locus in config.loci_list:
+        heterozygotes = 0
+        homozygotes = 0
+
+        for sample in unique_samples:
+            # Get the two rows for each sample
+            sample_data = selection_genotypes_two_lines[
+                selection_genotypes_two_lines["Sample"] == sample
+            ][locus].values
+            
+            # Should have exactly one value per allele
+            if len(sample_data) == 2:
+                allele1 = sample_data[0]
+                allele2 = sample_data[1]
+                
+                # Convert to numeric and handle missing data (0 or NaN)
+                # Missing data is represented as 0 or NaN - exclude these cases
+                allele1_valid = pd.notna(allele1) and (allele1 != 0) and (allele1 != "0")
+                allele2_valid = pd.notna(allele2) and (allele2 != 0) and (allele2 != "0")
+                
+                # Only count if both alleles are not missing
+                if allele1_valid and allele2_valid:
+                    # Convert to numeric for comparison
+                    allele1_num = float(allele1)
+                    allele2_num = float(allele2)
+                    
+                    # Check if heterozygous (different alleles) or homozygous (same alleles)
+                    if allele1_num != allele2_num:
+                        heterozygotes += 1
+                    else:
+                        homozygotes += 1
+
+        # Calculate Ho
+        total = heterozygotes + homozygotes
+        if total > 0:
+            ho = heterozygotes / total
+        else:
+            ho = 0.0
+        
+        df_locus = pd.DataFrame(
+            {
+                "locus": locus,
+                "ho": ho,
+                "heterozygotes": heterozygotes,
+                "homozygotes": homozygotes,
+            },
+            index=[0],
+        )
+        df_ho = pd.concat([df_ho, df_locus], ignore_index=True)
+    
+    # Calculate mean observed heterozygosity across all loci
+    n_loci = len(df_ho["locus"].unique())
+    if n_loci > 0:
+        ho_mean = df_ho["ho"].sum() / n_loci
+    else:
+        ho_mean = 0.0
+    
+    # Save Ho results
+    output_file = (
+        f"{config.output_path}/heterozygosity/observed_heterozygosity_{selection_name}.csv"
+    )
+    df_ho.to_csv(output_file, sep=CSV_SEPARATOR, index=False)
+    
+    return df_ho, ho_mean
+
+
+def compute_f_statistic(he_mean: float, ho_mean: float) -> float:
+    """
+    Calculate F-statistic (inbreeding coefficient).
+
+    F = (Mean expected heterozygosity - Mean observed heterozygosity) / Mean expected heterozygosity
+
+    Args:
+        he_mean: Mean expected heterozygosity across all loci
+        ho_mean: Mean observed heterozygosity across all loci
+
+    Returns:
+        F-statistic value
+    """
+    if he_mean > 0:
+        f_stat = (he_mean - ho_mean) / he_mean
+    else:
+        f_stat = 0.0
+    return f_stat
+
+
+def compute_observed_heterozygosity_all_samples(
+    config: FileConfiguration, selection: pd.DataFrame, selection_name: str
+) -> Tuple[pd.DataFrame, float]:
+    """Compute observed heterozygosity for all samples combined."""
+    df_selection = select_and_concat_all_genotypes(
+        selection, config.genotypes_two_lines
+    )
+    return compute_observed_heterozygosity(
+        config, df_selection, selection_name + "_all"
+    )
+
+
+def compute_observed_heterozygosity_pops(
+    config: FileConfiguration, selection: pd.DataFrame, selection_name: str
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute observed heterozygosity for each population separately."""
+    df_ho_all = pd.DataFrame()
+    df_ho_means = pd.DataFrame()
+    for _pop in selection.Population.unique():
+        selec = select_a_given_pop(config.genotypes_two_lines, _pop)
+        df_ho, ho_mean = compute_observed_heterozygosity(
+            config, selec, config.selection_name + f"_{_pop}"
+        )
+        df_ho_all = pd.concat([df_ho_all, df_ho], ignore_index=True)
+        df_ho_means = pd.concat(
+            [
+                df_ho_means,
+                pd.DataFrame({"Population": _pop, "Ho_mean": ho_mean}, index=[0]),
+            ],
+            ignore_index=True,
+        )
+    return df_ho_all, df_ho_means
+
+
+def compute_observed_heterozygosity_pop_years(
+    config: FileConfiguration, selection: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute observed heterozygosity for each population-year combination."""
+    df_ho_all = pd.DataFrame()
+    df_ho_means = pd.DataFrame()
+    selection = selection[["Population", "Year"]].drop_duplicates()
+    for _pop, _year in zip(selection.Population, selection.Year):
+        selec = select_a_given_pop_year(config.genotypes_two_lines, _pop, _year)
+        df_ho, ho_mean = compute_observed_heterozygosity(
+            config, selec, config.selection_name + f"_{_pop}_{_year}"
+        )
+        df_ho_all = pd.concat([df_ho_all, df_ho], ignore_index=True)
+        df_ho_means = pd.concat(
+            [
+                df_ho_means,
+                pd.DataFrame(
+                    {"Population": _pop, "Year": _year, "Ho_mean": ho_mean}, index=[0]
+                ),
+            ],
+            ignore_index=True,
+        )
+    return df_ho_all, df_ho_means
+
+
+def compute_observed_heterozygosity_subcat(
+    config: FileConfiguration, selection: pd.DataFrame
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute observed heterozygosity for each population-year-subcategory combination."""
+    df_ho_all = pd.DataFrame()
+    df_ho_means = pd.DataFrame()
+    for _pop, _year, _sub in zip(
+        selection.Population, selection.Year, selection.Subcategory
+    ):
+        selec = select_a_given_pop_year_subcat(
+            config.genotypes_two_lines, _pop, _year, _sub
+        )
+        _ext = get_extension_if_subcat(_sub)
+        df_ho, ho_mean = compute_observed_heterozygosity(
+            config, selec, config.selection_name + f"_{_pop}_{_year}{_ext}"
+        )
+        df_ho_all = pd.concat([df_ho_all, df_ho], ignore_index=True)
+        df_ho_means = pd.concat(
+            [
+                df_ho_means,
+                pd.DataFrame(
+                    {
+                        "Population": _pop,
+                        "Year": _year,
+                        "Subcategory": _sub,
+                        "Ho_mean": ho_mean,
+                    },
+                    index=[0],
+                ),
+            ],
+            ignore_index=True,
+        )
+    return df_ho_all, df_ho_means
+
+
 def compute_frequency_and_heterozygosity(
     config: FileConfiguration, pop_order_list: list[str]
 ) -> None:
@@ -706,22 +918,63 @@ def compute_frequency_and_heterozygosity(
         df_heterozygosity = frequency_and_heterozygosity_all_samples(
             config, selection, selection_name
         )
+        _, ho_mean = compute_observed_heterozygosity_all_samples(
+            config, selection, selection_name
+        )
+        # Compute F-statistic
+        he_mean = df_heterozygosity["Heterozygosity"].iloc[0]
+        f_stat = compute_f_statistic(he_mean, ho_mean)
+        df_heterozygosity["Ho_mean"] = ho_mean
+        df_heterozygosity["F_statistic"] = f_stat
 
     elif config.agg_type == "pops":
         df_heterozygosity = frequency_and_heterozygosity_pops(
             config, selection, selection_name
         )
+        _, df_ho_means = compute_observed_heterozygosity_pops(
+            config, selection, selection_name
+        )
+        # Merge Ho means and compute F-statistic
+        df_heterozygosity = df_heterozygosity.merge(
+            df_ho_means[["Population", "Ho_mean"]], on="Population", how="left"
+        )
+        df_heterozygosity["F_statistic"] = df_heterozygosity.apply(
+            lambda row: compute_f_statistic(row["Heterozygosity"], row["Ho_mean"]),
+            axis=1,
+        )
 
     elif config.agg_type == "pop_years":
         df_heterozygosity = frequency_and_heterozygosity_pop_years(config, selection)
+        _, df_ho_means = compute_observed_heterozygosity_pop_years(config, selection)
+        # Merge Ho means and compute F-statistic
+        df_heterozygosity = df_heterozygosity.merge(
+            df_ho_means[["Population", "Year", "Ho_mean"]],
+            on=["Population", "Year"],
+            how="left",
+        )
+        df_heterozygosity["F_statistic"] = df_heterozygosity.apply(
+            lambda row: compute_f_statistic(row["Heterozygosity"], row["Ho_mean"]),
+            axis=1,
+        )
 
     else:  # subcat
         df_heterozygosity = frequency_and_heterozygosity_subcat(config, selection)
+        _, df_ho_means = compute_observed_heterozygosity_subcat(config, selection)
+        # Merge Ho means and compute F-statistic
+        df_heterozygosity = df_heterozygosity.merge(
+            df_ho_means[["Population", "Year", "Subcategory", "Ho_mean"]],
+            on=["Population", "Year", "Subcategory"],
+            how="left",
+        )
+        df_heterozygosity["F_statistic"] = df_heterozygosity.apply(
+            lambda row: compute_f_statistic(row["Heterozygosity"], row["Ho_mean"]),
+            axis=1,
+        )
 
     # selection_name += "_" + config.agg_type
     plot_frequencies(config, selection, selection_name, config.agg_type, pop_order_list)
 
-    # save
+    # save heterozygosity values with F-statistic
     df_heterozygosity.to_csv(
         f"{config.output_path}/heterozygosity/heterozygosity_values_{selection_name}.csv",
         sep=";",

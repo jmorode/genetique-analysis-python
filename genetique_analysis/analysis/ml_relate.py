@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from ..core.config import FileConfiguration
-from ..core.constants import nb_ind_relation, order_inds_family, reference_array
+from ..core.constants import NB_IND_RELATION, REFERENCE_ARRAY
 from ..utils.utils import (
     conversion_two_lines_to_one_lines_genotypes,
     get_extension_if_subcat,
@@ -37,9 +37,11 @@ def reformat_genotypes_selection_for_ml_relate(
     )
 
     for locus in config.loci_list:
-        df_genotypes[locus] = df_genotypes[f"{locus}_1"].astype(str) + df_genotypes[
-            f"{locus}_2"
-        ].astype(str)
+        # Format alleles as 3-digit numbers with leading zeros (e.g., 5 -> "005", 42 -> "042")
+        df_genotypes[locus] = (
+            df_genotypes[f"{locus}_1"].apply(lambda x: f"{int(x):03d}" if pd.notna(x) else "000")
+            + df_genotypes[f"{locus}_2"].apply(lambda x: f"{int(x):03d}" if pd.notna(x) else "000")
+        )
     df_genotypes = df_genotypes[["Sample"] + list(config.loci_list)]
     df_genotypes["Sample"] = df_genotypes.Sample.apply(lambda x: x + ",")
     return df_genotypes
@@ -110,6 +112,9 @@ def count_nbr_relationships_from_ml_relate_output(
     df_counts = pd.DataFrame(
         {"PO": po_count, "FS": fs_count, "HS": hs_count, "U": un_count}, index=[0]
     )
+    df_counts.to_csv(f"{config.output_path}/ml_relate/nbr_relationships_{config.selection_name}.csv",
+                     sep = ";",
+                     index=False)
     return df_counts
 
 
@@ -145,11 +150,11 @@ def compare_numpy_arrays(
     return matching_counts, mismatches_counts
 
 
-def add_missing_relationships_matches(df: pd.DataFrame) -> pd.DataFrame:
+def add_missing_relationships_matches(df: pd.DataFrame, col_name: str) -> pd.DataFrame:
     for _rel in ["PO", "FS", "HS", "U"]:
-        if _rel not in df["true_relation"].to_list():
+        if _rel not in df[col_name].to_list():
             df = pd.concat(
-                [df, pd.DataFrame({"true_relation": _rel, "count": 0}, index=[0])]
+                [df, pd.DataFrame({col_name: _rel, "count": 0}, index=[0])]
             )
     return df
 
@@ -182,9 +187,9 @@ def get_percentage_and_count_relationships_families(
     df_stats: pd.DataFrame, meta_col: list[str], nb_families: int
 ) -> pd.DataFrame:
     df_stats = df_stats.groupby(meta_col)["count"].sum().reset_index()
-    df_stats = add_missing_relationships_matches(df_stats)
+    df_stats = add_missing_relationships_matches(df_stats,meta_col[0])
     df_stats["percentage"] = df_stats.apply(
-        lambda x: x["count"] / (nb_ind_relation[x[meta_col[0]]] * nb_families) * 100,
+        lambda x: x["count"] / (NB_IND_RELATION[x[meta_col[0]]] * nb_families) * 100,
         axis=1,
     )
     return df_stats
@@ -195,7 +200,7 @@ def get_total_percentage_over_families(
 ) -> float:
     return (
         df_stats["count"].sum()
-        / (np.sum(list(nb_ind_relation.values())) * nb_families)
+        / (np.sum(list(NB_IND_RELATION.values())) * nb_families)
         * 100
     )
 
@@ -213,8 +218,11 @@ def overall_stats_relationships_simulated_families(
     df_matching_stats = get_percentage_and_count_relationships_families(
         df_matching_stats, ["true_relation"], nb_families
     )
+    df_mismatching_rel = get_percentage_and_count_relationships_families(
+        df_mismatching_stats, ["true_relation"], nb_families
+    )
     df_mismatching_stats = get_percentage_and_count_relationships_families(
-        df_mismatching_stats, ["found_relation", "true_relation"], nb_families
+        df_mismatching_stats, ["found_relation","true_relation"], nb_families
     )
 
     # Format output file
@@ -225,39 +233,40 @@ def overall_stats_relationships_simulated_families(
                 "Total percentage of correct relationships",
                 "Total percentage of incorrect relationships",
                 "Average percentage of correct relationships",
-                "Percentage of incorrect PO",
-                "Percentage of incorrect FS",
-                "Percentage of incorrect HS",
-                "Percentage of incorrect U",
             ],
             "percentage": [
                 get_total_percentage_over_families(df_matching_stats, nb_families),
                 get_total_percentage_over_families(df_mismatching_stats, nb_families),
                 df_matching_stats.percentage.mean(),
-                get_sum_percentage_by_category(df_mismatching_stats, "PO"),
-                get_sum_percentage_by_category(df_mismatching_stats, "FS"),
-                get_sum_percentage_by_category(df_mismatching_stats, "HS"),
-                get_sum_percentage_by_category(df_mismatching_stats, "U"),
             ],
         }
     )
-    # Correct by relationships
+    # Incorrect relationships
+    df_mismatching_rel["true_relation"] = df_mismatching_rel["true_relation"].apply(
+        lambda x: "Percentage of incorrectly found " + x
+    )
+    df_mismatching_rel = df_mismatching_rel.rename(columns={"true_relation": "category"})
+
+    # Correct relationships
     df_matching_stats["true_relation"] = df_matching_stats["true_relation"].apply(
-        lambda x: "Percentage of correct " + x
+        lambda x: "Percentage of correctly found " + x
     )
     df_matching_stats = df_matching_stats.rename(columns={"true_relation": "category"})
 
     # Incorrect by relationships
     df_mismatching_stats["category"] = df_mismatching_stats.apply(
-        lambda x: "Percentage of incorrect "
+        lambda x: "Percentage of incorrectly found "
         + x.found_relation
-        + " that should be "
-        + x.true_relation,
+        + " that should have been "
+        + x.true_relation
+        + " over total expected number of "
+        + x.found_relation,
         axis=1,
     )
     df_global_stats = pd.concat(
         [
             df_reliability,
+            df_mismatching_rel,
             df_matching_stats,
             df_mismatching_stats.drop(columns=["true_relation", "found_relation"]),
         ],
@@ -278,34 +287,34 @@ def reliability_ml_relate_based_simulated_families(
     df_mismatching_stats = pd.DataFrame()
 
     for i in range(nb_families):
-        # select family
-        list_inds = [f"P1_{i}", f"M_{i}", f"P2_{i}", f"F1_{i}", f"F2_{i}", f"DF_{i}"]
-        df_family = df[df["Unnamed: 0"].isin(list_inds)][
-            ["Unnamed: 0"] + list_inds
-        ].copy()
+        # Select family
+        fam = f"{i:04d}"
+        # ML-Relate output is already ordered correctly; only extract the family submatrix
+        family_cols = [
+            c
+            for c in df.columns
+            if isinstance(c, str) and c != "Unnamed: 0" and c.endswith(f"_{fam}")
+        ]
+        if len(family_cols) != REFERENCE_ARRAY.shape[0]:
+            raise ValueError(
+                f"Expected {REFERENCE_ARRAY.shape[0]} individuals for family {fam}, "
+                f"found {len(family_cols)} columns: {family_cols}")
 
-        # get standard name for individuals rows
-        df_family["Unnamed: 0"] = df_family["Unnamed: 0"].apply(
-            lambda x: x.split("_")[0]
-        )
-
-        # reorder rows to match columns and reference matrix
-        df_family["row_order"] = df_family["Unnamed: 0"].apply(
-            lambda x: order_inds_family[x]
-        )
-        df_family = df_family.sort_values(by="row_order", ascending=True)
-        df_family = df_family.drop(columns=["row_order"])
-
-        # get standard name for individuals cols
+        df_family = df.loc[df["Unnamed: 0"].isin(family_cols), ["Unnamed: 0"] + family_cols].copy()
         df_family = df_family.set_index("Unnamed: 0")
+
+        # Standardize labels to match REFERENCE_ARRAY (e.g., "DF_0000" -> "DF")
+        df_family.index = df_family.index.map(
+            lambda x: x.split("_")[0] if isinstance(x, str) else x
+        )
         df_family.columns = [col.split("_")[0] for col in df_family.columns]
 
         # Compute stats
         matching_counts, mismatching_counts = compare_numpy_arrays(
-            df_family.to_numpy(), reference_array
+            df_family.to_numpy(), REFERENCE_ARRAY
         )
 
-        # append stats of the family
+        # Append stats of the family
         df_matching_stats = pd.concat(
             [df_matching_stats, matching_counts], ignore_index=True
         )

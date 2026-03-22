@@ -47,10 +47,15 @@ def get_recaptures(config: FileConfiguration) -> None:
 
 
 def get_recaptures_sample(
-    config: FileConfiguration, df_pairwise: pd.DataFrame, name: str, save_file: False
+    config: FileConfiguration, df_pairwise: pd.DataFrame, name: str, save_file: bool=False
 ) -> pd.DataFrame:
-
+    """
+    Identify recaptures based on pairwise differences.
+    """
     cols = list(df_pairwise.columns)
+    # Remove 'Population' column if present (it's not a sample name)
+    cols = [c for c in cols if c != "Population"]
+    
     res = pd.DataFrame()
     for _col in cols:
         recap = df_pairwise.index[df_pairwise[_col] == 0].tolist()

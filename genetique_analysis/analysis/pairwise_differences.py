@@ -79,6 +79,24 @@ def calculate_pairwise_differences_pandas(
                 individual1_lock = data[i, k : k + 2].tolist()
                 individual2_lock = data[j, k : k + 2].tolist()
 
+                # Check if either individual has missing data at this locus
+                # Missing data is represented as (0, 0) or NaN values
+                ind1_missing = (
+                    (individual1_lock[0] == 0 and individual1_lock[1] == 0)
+                    or pd.isna(individual1_lock[0])
+                    or pd.isna(individual1_lock[1])
+                )
+                ind2_missing = (
+                    (individual2_lock[0] == 0 and individual2_lock[1] == 0)
+                    or pd.isna(individual2_lock[0])
+                    or pd.isna(individual2_lock[1])
+                )
+
+                # Skip this locus if either individual has missing data
+                if ind1_missing or ind2_missing:
+                    continue
+
+                # Calculate differences only for loci with known alleles for both individuals
                 if len(np.unique(individual1_lock + individual2_lock)) == 1:
                     nb_diff_loc = 0
                 else:
@@ -89,6 +107,7 @@ def calculate_pairwise_differences_pandas(
                 nb_diff_pair.append(nb_diff_loc)
 
             # Update difference matrix and all differences list
+            # Sum of differences across all valid (non-missing) loci
             nb_diff_pair_sum = np.sum(nb_diff_pair)
             diff_matrix[i, j] = nb_diff_pair_sum
             diff_matrix[j, i] = nb_diff_pair_sum  # Symmetric for upper triangle
@@ -125,6 +144,9 @@ def calculate_pairwise_differences(
 
     # Create a difference matrix
     diff_matrix = np.zeros((num_individuals, num_individuals))
+    
+    # Create a matrix to store number of loci analyzed for each pair
+    loci_count_matrix = np.zeros((num_individuals, num_individuals))
 
     # List to store all pairwise differences
     all_differences = []
@@ -133,10 +155,32 @@ def calculate_pairwise_differences(
     for i in range(num_individuals):
         for j in range(i):
             nb_diff_pair = []
+            num_loci_analyzed = 0
             for k in range(0, num_loci, 2):
                 individual1_lock = data[i, k : k + 2].tolist()
                 individual2_lock = data[j, k : k + 2].tolist()
 
+                # Check if either individual has missing data at this locus
+                # Missing data is represented as (0, 0) or NaN values
+                ind1_missing = (
+                    (individual1_lock[0] == 0 and individual1_lock[1] == 0)
+                    or pd.isna(individual1_lock[0])
+                    or pd.isna(individual1_lock[1])
+                )
+                ind2_missing = (
+                    (individual2_lock[0] == 0 and individual2_lock[1] == 0)
+                    or pd.isna(individual2_lock[0])
+                    or pd.isna(individual2_lock[1])
+                )
+
+                # Skip this locus if either individual has missing data
+                if ind1_missing or ind2_missing:
+                    continue
+
+                # Increment count of analyzed loci
+                num_loci_analyzed += 1
+
+                # Calculate differences only for loci with known alleles for both individuals
                 if len(np.unique(individual1_lock + individual2_lock)) == 1:
                     nb_diff_loc = 0
                 else:
@@ -147,9 +191,12 @@ def calculate_pairwise_differences(
                 nb_diff_pair.append(nb_diff_loc)
 
             # Update difference matrix and all differences list
+            # Sum of differences across all valid (non-missing) loci
             nb_diff_pair_sum = np.sum(nb_diff_pair)
             diff_matrix[i, j] = nb_diff_pair_sum
             diff_matrix[j, i] = nb_diff_pair_sum
+            loci_count_matrix[i, j] = num_loci_analyzed
+            loci_count_matrix[j, i] = num_loci_analyzed
             all_differences.append(nb_diff_pair_sum)
 
     # Convert back to DataFrame and replace diagonal with NaN
@@ -162,6 +209,18 @@ def calculate_pairwise_differences(
     diff_matrix["Population"] = diff_matrix.index.map(config.dict_pop_samples)
     diff_matrix.to_csv(
         f"{config.output_path}/pairwise_differences/pairwise_differences_{pop}.csv",
+        sep=";",
+        index=True,
+    )
+
+    # Convert loci count matrix to DataFrame and save
+    loci_count_df = pd.DataFrame(
+        loci_count_matrix, index=df_data.iloc[:, 0], columns=df_data.iloc[:, 0]
+    )
+    np.fill_diagonal(loci_count_df.values, np.nan)
+    loci_count_df["Population"] = loci_count_df.index.map(config.dict_pop_samples)
+    loci_count_df.to_csv(
+        f"{config.output_path}/pairwise_differences/number_loci_analyzed_{pop}.csv",
         sep=";",
         index=True,
     )
